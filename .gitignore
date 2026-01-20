@@ -1,0 +1,4 @@
+admin/.venv
+__pycache__
+admin/config.json
+admin/articles/*.*
