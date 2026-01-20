@@ -71,6 +71,12 @@
     flex: 1;
 }
 
+/* Asegurar espaciado entre párrafos dentro del contenido del artículo
+   (el reset global elimina márgenes por defecto) */
+.article-content p {
+    margin-bottom: 1rem;
+}
+
 .article-intro {
     background: var(--card-bg);
     border-left: 4px solid var(--neon-pink);
