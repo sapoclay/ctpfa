@@ -22,7 +22,8 @@ class RetroCMSApp:
     
     CATEGORIES = [
         "TECNOLOGÍA", "VIDEOJUEGOS", "MÚSICA", "CINE", 
-        "INTERNET", "HARDWARE", "SOFTWARE", "CULTURA"
+        "INTERNET", "HARDWARE", "SOFTWARE", "CULTURA", 
+        "GESTIÓN DE INCIDENTES DE SEGURIDAD"
     ]
     
     def __init__(self):
