@@ -1068,6 +1068,8 @@ class RetroCMSApp:
                 index_html = self.generator.generate_index_html(self.articles.list_articles())
                 uploader.upload_string(index_html, f"{remote_path}/index.html")
                 self.anim_add_line("  ✓ index.html actualizado")
+
+                
                 
                 self.anim_update_progress(1, 1)
                 self.anim_add_line("")
@@ -1174,6 +1176,7 @@ class RetroCMSApp:
                 index_html = self.generator.generate_index_html(self.articles.list_articles())
                 uploader.upload_string(index_html, f"{remote_path}/index.html")
                 self.anim_add_line("  ✓ index.html actualizado")
+                
                 
                 self.anim_add_line("")
                 self.anim_add_line("> Cerrando conexión...")

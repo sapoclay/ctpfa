@@ -403,17 +403,53 @@ class HTMLGenerator:
 </html>'''
     
     def process_content(self, content):
-        """Procesa el contenido con formato básico"""
-        lines = content.split('\n')
+        """Procesa el contenido con formato básico.
+
+        Comportamiento:
+        - Las líneas se agrupan en párrafos separados por una línea en blanco.
+        - Los saltos de línea simples dentro de un párrafo se convierten en `<br>`.
+        - Conserva listas, encabezados, bloques de código y citas.
+        """
+        raw_lines = content.split('\n')
         html_lines = []
         in_list = False
         in_code = False
-        
-        for line in lines:
-            line = line.strip()
-            
+
+        # Buffer para agrupar líneas de un mismo párrafo
+        para_buf = []
+
+        def flush_paragraph():
+            nonlocal para_buf
+            if not para_buf:
+                return
+            # Unir líneas del párrafo según reglas de Markdown:
+            # - Una línea simple se une con un espacio
+            # - Si una línea termina con dos espacios, se interpreta como <br>
+            parts = []
+            for i, pl in enumerate(para_buf):
+                if pl.endswith('  '):
+                    parts.append(pl.rstrip())
+                    parts.append('<br>')
+                else:
+                    parts.append(pl)
+                    # Añadir espacio entre líneas si no es la última y si la siguiente no empieza con <
+                    if i != len(para_buf) - 1:
+                        parts.append(' ')
+
+            para_text = ''.join(parts).strip()
+            # Aplicar formatos inline
+            para_text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', para_text)
+            para_text = re.sub(r'\*(.+?)\*', r'<em>\1</em>', para_text)
+            html_lines.append(f'<p>{para_text}</p>')
+            para_buf = []
+
+        for raw in raw_lines:
+            line = raw.rstrip('\r')
+
             # Bloques de código
-            if line.startswith('```'):
+            if line.strip().startswith('```'):
+                # Antes de entrar/salir de código, vaciar párrafo pendiente
+                flush_paragraph()
                 if in_code:
                     html_lines.append('</pre>')
                     in_code = False
@@ -421,41 +457,59 @@ class HTMLGenerator:
                     html_lines.append('<pre class="code-block">')
                     in_code = True
                 continue
-            
+
             if in_code:
                 html_lines.append(line)
                 continue
-            
-            # Headers
-            if line.startswith('## '):
-                html_lines.append(f'<h2>╔═══ {line[3:].upper()} ═══╗</h2>')
-            elif line.startswith('### '):
-                html_lines.append(f'<h3>★ {line[4:].upper()} ★</h3>')
-            # Listas
-            elif line.startswith('- ') or line.startswith('* '):
-                if not in_list:
-                    html_lines.append('<ul class="retro-list">')
-                    in_list = True
-                html_lines.append(f'<li>► {line[2:]}</li>')
-            # Citas
-            elif line.startswith('> '):
-                html_lines.append(f'<blockquote class="retro-quote"><p>{line[2:]}</p></blockquote>')
-            # Párrafos normales
-            elif line:
+
+            stripped = line.strip()
+
+            # Línea en blanco => final de párrafo o lista
+            if stripped == '':
+                flush_paragraph()
                 if in_list:
                     html_lines.append('</ul>')
                     in_list = False
-                # Procesar negritas y cursivas
-                line = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', line)
-                line = re.sub(r'\*(.+?)\*', r'<em>\1</em>', line)
-                html_lines.append(f'<p>{line}</p>')
-            elif in_list:
-                html_lines.append('</ul>')
-                in_list = False
-        
+                continue
+
+            # Headers
+            if stripped.startswith('## '):
+                flush_paragraph()
+                html_lines.append(f'<h2>╔═══ {stripped[3:].upper()} ═══╗</h2>')
+                continue
+            elif stripped.startswith('### '):
+                flush_paragraph()
+                html_lines.append(f'<h3>★ {stripped[4:].upper()} ★</h3>')
+                continue
+
+            # Listas
+            if stripped.startswith('- ') or stripped.startswith('* '):
+                # Si había un párrafo abierto, cerrarlo
+                flush_paragraph()
+                if not in_list:
+                    html_lines.append('<ul class="retro-list">')
+                    in_list = True
+                html_lines.append(f'<li>► {stripped[2:]}</li>')
+                continue
+
+            # Citas
+            if stripped.startswith('> '):
+                flush_paragraph()
+                html_lines.append(f'<blockquote class="retro-quote"><p>{stripped[2:]}</p></blockquote>')
+                continue
+
+            # Texto normal -> acumular en buffer de párrafo
+            # Mantener el texto tal cual (sin .strip()) pero quitar espacios finales
+            para_line = line
+            para_buf.append(para_line)
+
+        # Fin del bucle: vaciar buffers abiertos
+        flush_paragraph()
         if in_list:
             html_lines.append('</ul>')
         if in_code:
             html_lines.append('</pre>')
-        
-        return '\n                '.join(html_lines)
+
+        # Añadir una línea en blanco adicional entre bloques para que
+        # en el HTML generado haya una separación visual (línea en blanco)
+        return '\n\n                '.join(html_lines)
