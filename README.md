@@ -1,28 +1,28 @@
 # ⚡ Cualquier Tiempo Pasado Fue Anterior ⚡
 
-Una web retro rápida con estética años 80-90 y un cliente de escritorio para gestionar el contenido.
+Una web retro rápida con estética años 80-90 y un cliente de escritorio creado con Python para gestionar el contenido.
 
 <img width="768" height="768" alt="logo" src="https://github.com/user-attachments/assets/2c1fa5f4-57fb-4f0b-a94f-0581cc25b582" />
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    CUALQUIER TIEMPO PASADO FUE ANTERIOR                       ║
-║                         Tu portal de nostalgia digital                        ║
+║                   Antes tenía menos pelos en las piernas                      ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 ```
 
-## 📋 Descripción
+## Descripción
 
 Este proyecto consiste en dos partes:
 
 1. **Web estática retro**: Una página web ultra rápida con diseño inspirado en los años 80-90, con efectos neón, scanlines CRT y estética synthwave.
 
-2. **Cliente de escritorio (CMS)**: Una aplicación Python con interfaz gráfica para crear, editar y publicar artículos desde tu ordenador.
+2. **Cliente de escritorio (CMS)**: Una aplicación Python modularizada (paquete `cms/`) con interfaz gráfica para crear, editar y publicar artículos desde tu ordenador.
 
-## ✨ Características
+## Características
 
 ### Web
-- 🚀 **Ultra rápida**: HTML y CSS puro, sin JavaScript innecesario
+- 🚀 **Rápida**: HTML y CSS puro, sin JavaScript innecesario
 - 🎨 **Estética retro**: Colores neón, efecto scanlines, tipografía monoespaciada
 - 📱 **Responsive**: Se adapta a cualquier dispositivo
 - 🔒 **Sin dependencias**: No requiere CDN ni frameworks externos
@@ -45,15 +45,24 @@ webRetro/
 │   ├── style.css           # Estilos principales
 │   └── article.css         # Estilos para artículos
 ├── admin/                  # Cliente de escritorio (NO subir al servidor)
-│   ├── retro_cms.py        # Aplicación principal
-│   ├── run_app.py          # Lanzador con entorno virtual
+│   ├── retro_cms.py        # Punto de entrada (inicia el paquete `cms`)
+│   ├── run_app.py          # Lanzador que crea el venv e instala dependencias
 │   ├── requirements.txt    # Dependencias Python
-│   ├── config.json         # Configuración del servidor
+│   ├── config.json         # Configuración del servidor (local)
 │   ├── README.md           # Documentación del cliente
 │   ├── Img/
 │   │   └── logo.png        # Logo de la aplicación
-│   └── articles/           # Artículos guardados localmente
-│       └── index.json      # Índice de artículos
+│   ├── articles/           # Artículos guardados localmente
+│   │   └── index.json      # Índice de artículos
+│   └── cms/                # Código modular del cliente (paquete)
+│       ├── __init__.py
+│       ├── app.py          # Lógica principal y UI
+│       ├── articles.py     # Gestión de artículos
+│       ├── config.py       # Gestión de configuración
+│       ├── dialogs.py      # Diálogos y ventanas
+│       ├── html_generator.py
+│       ├── theme.py
+│       └── uploader.py     # Subida SFTP/FTP
 └── README.md               # Este archivo
 ```
 
@@ -86,10 +95,9 @@ cd ~/ctpfa-cms/
 python3 run_app.py
 ```
 
-El script `run_app.py` automáticamente:
-1. Crea un entorno virtual `.venv`
-2. Instala las dependencias (`paramiko`, `Pillow`)
-3. Lanza la aplicación
+Detalles importantes:
+- El cliente está modularizado dentro de `admin/cms/` como paquete Python. El punto de entrada sigue siendo `retro_cms.py`, que importa y arranca la clase `RetroCMSApp` desde `cms`.
+- `run_app.py` crea un entorno virtual `.venv`, instala las dependencias listadas en `requirements.txt` y ejecuta `retro_cms.py`.
 
 ## 🖥️ Uso del cliente
 
@@ -122,7 +130,7 @@ El script `run_app.py` automáticamente:
 2. Pulsa el botón **Publicar**
 3. Confirma la publicación
 4. El artículo se subirá al servidor y el `index.html` se actualizará automáticamente
-5. Disfruta de la animación retro de transmisión 😎
+5. Disfruta de la animación retro de transmisión 
 
 > **Nota**: "Guardar" solo guarda en local, "Publicar" sube al servidor.
 
@@ -173,18 +181,15 @@ Los colores se definen en `css/style.css` mediante variables CSS:
 
 ### Categorías
 
-Las categorías disponibles se definen en `retro_cms.py`:
+Las categorías disponibles se definen en `admin/cms/app.py` (atributo `RetroCMSApp.CATEGORIES`):
 
 ```python
 CATEGORIES = [
     "TECNOLOGÍA", "VIDEOJUEGOS", "MÚSICA", "CINE", 
-    "INTERNET", "HARDWARE", "SOFTWARE", "CULTURA"
+    "INTERNET", "HARDWARE", "SOFTWARE", "CULTURA",
+    "GESTIÓN DE INCIDENTES DE SEGURIDAD"
 ]
 ```
-
-### Logo
-
-Coloca tu logo en `admin/Img/logo.png`. Se mostrará con un borde verde neón en la ventana "Acerca de".
 
 ## 🔒 Seguridad
 
@@ -193,10 +198,10 @@ Coloca tu logo en `admin/Img/logo.png`. Se mostrará con un borde verde neón en
 - Se recomienda usar claves SSH en lugar de contraseñas
 - La carpeta `admin/` nunca debe estar en el servidor web
 
-## 📦 Dependencias
+## Dependencias
 
 ### Web
-- Ninguna (HTML + CSS puro)
+- Ninguna (HTML + CSS puro y duro)
 
 ### Cliente de escritorio
 - Python 3.8+
@@ -204,7 +209,7 @@ Coloca tu logo en `admin/Img/logo.png`. Se mostrará con un borde verde neón en
 - Pillow (carga de imágenes)
 - tkinter (incluido en Python)
 
-## 🗂️ Flujo de trabajo
+## Flujo de trabajo
 
 ```
 ┌─────────────────────┐                      ┌─────────────────────┐
@@ -223,7 +228,7 @@ Coloca tu logo en `admin/Img/logo.png`. Se mostrará con un borde verde neón en
 └─────────────────────┘                      └─────────────────────┘
 ```
 
-## 🐛 Solución de problemas
+## Solución de problemas
 
 ### Error de Firefox en Linux (Snap)
 Si al abrir enlaces aparece un error de `GTK_PATH`, el cliente ya incluye un fix automático.
@@ -237,9 +242,9 @@ Si al abrir enlaces aparece un error de `GTK_PATH`, el cliente ya incluye un fix
 - Verifica que existe `admin/Img/logo.png`
 - El archivo debe ser PNG con transparencia para mejor resultado
 
-## 📜 Licencia
+## Licencia
 
-© 2026 Cualquier Tiempo Pasado Fue Anterior
+2026 Cualquier Tiempo Pasado Fue Anterior
 
 ## 🔗 Enlaces
 
