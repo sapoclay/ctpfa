@@ -7,7 +7,7 @@ Una web retro rápida con estética años 80-90 y un cliente de escritorio cread
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    CUALQUIER TIEMPO PASADO FUE ANTERIOR                       ║
-║                   Antes tenía menos pelos en las piernas                      ║
+║                 De cuando tenía menos pelos en las piernas                    ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 ```
 
