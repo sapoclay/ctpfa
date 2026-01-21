@@ -128,8 +128,7 @@ class ArticleManager:
         text = re.sub(r'[^a-z0-9]+', '-', text)
         text = text.strip('-')
         return text
-<<<<<<< HEAD
-=======
+
 
     def extract_article_data(self, html_content, filename):
         """Extrae los datos del artículo desde el HTML sin guardar."""
@@ -265,4 +264,4 @@ class ArticleManager:
         # Limpieza final
         text = re.sub(r'\n{3,}', '\n\n', text)
         return text.strip()
->>>>>>> e48a5e5 (Trabajo inicial)
+

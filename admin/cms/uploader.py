@@ -209,8 +209,6 @@ class FileUploader:
                 raise ConnectionError("No hay conexión FTP activa")
             self.ftp.delete(remote_path)
 
-<<<<<<< HEAD
-=======
     def list_files(self, remote_path):
         """Lista archivos en un directorio remoto"""
         if self.protocol == "sftp":
@@ -249,8 +247,6 @@ class FileUploader:
                 return bio.getvalue().decode('utf-8')
             except:
                 return None
-
->>>>>>> e48a5e5 (Trabajo inicial)
 
 # Alias para compatibilidad
 SFTPUploader = FileUploader
