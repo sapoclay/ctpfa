@@ -70,23 +70,42 @@ class HTMLGenerator:
         </article>
     </main>
 
+<<<<<<< HEAD
     <footer class="footer">
         <div class="footer-content">
             <p class="footer-text">════════════════════════════════════════════════════════</p>
             <p class="footer-copy">© 2026 Cualquier Tiempo Pasado Fue Anterior - Todos los derechos reservados</p>
+=======
+            <footer class="footer">
+        <div class="footer-content">
+            <p class="footer-text">════════════════════════════════════════════════════════</p>
+            <p class="footer-copy">© 2026 Cualquier Tiempo Pasado Fue Anterior - Ni derechos ni torcidos</p>
+            <div class="footer-links">
+                <a href="#" id="downloadMd" class="footer-link">[ ↓ DESCARGAR .MD ]</a>
+            </div>
+>>>>>>> e48a5e5 (Trabajo inicial)
             <p class="footer-info">Optimizado para Netscape Navigator 4.0+ | Resolución: 800x600</p>
             <p class="footer-text">════════════════════════════════════════════════════════</p>
         </div>
     </footer>
 
     <script>
+<<<<<<< HEAD
         // Sistema de cambio de tema
         (function() {
+=======
+        // Sistema de cambio de tema y Descarga MD
+        (function() {
+            // TEMA
+>>>>>>> e48a5e5 (Trabajo inicial)
             const themeToggle = document.getElementById('themeToggle');
             const icon = themeToggle.querySelector('.icon');
             const label = themeToggle.querySelector('.label');
             
+<<<<<<< HEAD
             // Cargar tema guardado o usar oscuro por defecto
+=======
+>>>>>>> e48a5e5 (Trabajo inicial)
             const savedTheme = localStorage.getItem('ctpfa-theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
             updateButton(savedTheme);
@@ -109,6 +128,56 @@ class HTMLGenerator:
                     label.textContent = 'OSCURO';
                 }
             }
+<<<<<<< HEAD
+=======
+
+            // DESCARGA MARKDOWN
+            const downloadBtn = document.getElementById('downloadMd');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    try {
+                        const script = document.getElementById('ctpfa-data');
+                        if (!script) {
+                            alert('Error: Datos no encontrados');
+                            return;
+                        }
+                        
+                        const data = JSON.parse(script.textContent);
+                        
+                        // Construir contenido Markdown
+                        const frontmatter = [
+                            '---',
+                            `title: ${data.title}`,
+                            `category: ${data.category}`,
+                            `tags: ${(data.tags || []).join(', ')}`,
+                            `date: ${data.created}`,
+                            '---',
+                            '',
+                            ''
+                        ].join('\\n');
+                        
+                        const mdContent = frontmatter + data.content;
+                        
+                        // Crear Blob y descargar
+                        const blob = new Blob([mdContent], { type: 'text/markdown' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = (data.id || 'article') + '.md';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        
+                    } catch (err) {
+                        console.error(err);
+                        alert('Error al generar la descarga');
+                    }
+                });
+            }
+>>>>>>> e48a5e5 (Trabajo inicial)
         })();
     </script>
 </body>
@@ -145,7 +214,11 @@ class HTMLGenerator:
         
         # Formatear fecha
         date_obj = datetime.strptime(article['created'], "%Y-%m-%d %H:%M")
+<<<<<<< HEAD
         date_formatted = date_obj.strftime("%d de %B, %Y")
+=======
+        date_formatted = date_obj.strftime("%d-%m-%Y")
+>>>>>>> e48a5e5 (Trabajo inicial)
         
         # Obtener autor de la configuración
         author = "Admin"
@@ -154,8 +227,28 @@ class HTMLGenerator:
             if isinstance(author_config, str) and author_config:
                 author = author_config
         
+<<<<<<< HEAD
         template = Template(self.ARTICLE_TEMPLATE)
         return template.safe_substitute(
+=======
+        # Preparar datos JSON para incrustar (para importación sin pérdidas)
+        import json
+        article_data = article.copy()
+        # Asegurar que no hay datos sensibles si los hubiera (en este caso no, pero buena práctica)
+        json_data = json.dumps(article_data, ensure_ascii=False)
+        
+        template = Template(self.ARTICLE_TEMPLATE)
+        # Inyectar el script con datos JSON antes del cierre del body
+        # Como no tenemos una variable para eso en el template original, lo añadiremos
+        # modificando el template on-the-fly o simplemente concatenando, 
+        # pero es más limpio modificar el TEMPLATE si es posible.
+        # Dado que el template es una constante de clase, lo mejor es inyectar el script
+        # al final del contenido o modificar el template para incluir una variable ${json_data}
+        # Sin embargo, el template actual no tiene esa variable logica.
+        # Estrategia: Reemplazar </body> con el script + </body>
+        
+        html = template.safe_substitute(
+>>>>>>> e48a5e5 (Trabajo inicial)
             title=article['title'],
             subtitle=article.get('subtitle', ''),
             category=article['category'].upper(),
@@ -165,6 +258,13 @@ class HTMLGenerator:
             content=content,
             tags=tags_html
         )
+<<<<<<< HEAD
+=======
+        
+        # Inyectar script de datos
+        script_tag = f'<script type="application/json" id="ctpfa-data">{json_data}</script>'
+        return html.replace('</body>', f'{script_tag}\n</body>')
+>>>>>>> e48a5e5 (Trabajo inicial)
     
     def strip_markdown(self, text):
         """Elimina el formato markdown del texto para generar texto plano"""
@@ -205,7 +305,11 @@ class HTMLGenerator:
             
             # Formatear fecha
             date_obj = datetime.strptime(art['created'], "%Y-%m-%d %H:%M")
+<<<<<<< HEAD
             date_formatted = date_obj.strftime("%d/%m/%Y")
+=======
+            date_formatted = date_obj.strftime("%d-%m-%Y")
+>>>>>>> e48a5e5 (Trabajo inicial)
             
             template = Template(self.CARD_TEMPLATE)
             cards.append(template.safe_substitute(
@@ -218,9 +322,56 @@ class HTMLGenerator:
         
         return '\n\n'.join(cards)
     
+<<<<<<< HEAD
     def generate_index_html(self, articles):
         """Genera el index.html completo con los artículos publicados"""
         cards_html = self.generate_index_cards(articles)
+=======
+    def generate_tag_cloud(self, articles):
+        """Genera la nube de etiquetas HTML"""
+        # Contar tags
+        tag_counts = {}
+        for art in articles:
+            full_article = self.am.get_article(art['id'])
+            if full_article and full_article.get('published', False):
+                for tag in full_article.get('tags', []):
+                    clean_tag = tag.strip().upper()
+                    if clean_tag:
+                        tag_counts[clean_tag] = tag_counts.get(clean_tag, 0) + 1
+        
+        if not tag_counts:
+            return ""
+            
+        # Generar HTML con tamaños relativos
+        max_count = max(tag_counts.values())
+        min_count = min(tag_counts.values())
+        diff = max_count - min_count if max_count > min_count else 1
+        
+        tags_html = []
+        for tag, count in sorted(tag_counts.items()):
+            # Tamaño entre 0.8rem y 2.0rem
+            size = 0.8 + ((count - min_count) / diff) * 1.2
+            tags_html.append(
+                f'<span style="font-size: {size:.1f}rem" class="cloud-tag" title="{count} artículos">#{tag}</span>'
+            )
+            
+        return f'''
+        <section id="temas" class="tag-cloud">
+            <h2 class="section-title">
+                <span class="title-deco">▓▓▓</span>
+                TEMAS
+                <span class="title-deco">▓▓▓</span>
+            </h2>
+            <div class="cloud-content">
+                {' '.join(tags_html)}
+            </div>
+        </section>'''
+
+    def generate_index_html(self, articles):
+        """Genera el index.html completo con los artículos publicados"""
+        cards_html = self.generate_index_cards(articles)
+        tag_cloud_html = self.generate_tag_cloud(articles)
+>>>>>>> e48a5e5 (Trabajo inicial)
         
         # Contar artículos publicados
         published_count = 0
@@ -243,6 +394,34 @@ class HTMLGenerator:
     <meta http-equiv="Expires" content="0">
     <title>⚡ Cualquier Tiempo Pasado Fue Anterior ⚡</title>
     <link rel="stylesheet" href="css/style.css?v={cache_buster}">
+<<<<<<< HEAD
+=======
+    <style>
+        .tag-cloud {{
+            padding: 4rem 2rem;
+            background: var(--bg-secondary);
+            text-align: center;
+        }}
+        .cloud-content {{
+            max_width: 800px;
+            margin: 2rem auto;
+            line-height: 2.5;
+        }}
+        .cloud-tag {{
+            color: var(--neon-cyan);
+            margin: 0 0.5rem;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            cursor: default;
+        }}
+        .cloud-tag:hover {{
+            color: var(--neon-pink);
+            text-shadow: 0 0 10px var(--neon-pink);
+            transform: scale(1.1);
+        }}
+    </style>
+>>>>>>> e48a5e5 (Trabajo inicial)
 </head>
 <body>
     <div class="scanlines"></div>
@@ -271,7 +450,11 @@ class HTMLGenerator:
             <div class="hero-content">
                 <p class="hero-subtitle">※ BIENVENIDO AL PORTAL ※</p>
                 <h2 class="hero-title">CUALQUIER TIEMPO PASADO FUE ANTERIOR</h2>
+<<<<<<< HEAD
                 <p class="hero-desc">Tu fuente de nostalgia digital desde 1989</p>
+=======
+                <p class="hero-desc">Tomando malas de decisiones desde 1982</p>
+>>>>>>> e48a5e5 (Trabajo inicial)
                 <div class="hero-stats">
                     <div class="stat">
                         <span class="stat-num">{published_count}</span>
@@ -289,6 +472,11 @@ class HTMLGenerator:
             </div>
         </section>
 
+<<<<<<< HEAD
+=======
+        {tag_cloud_html}
+
+>>>>>>> e48a5e5 (Trabajo inicial)
         <section id="articulos" class="articles">
             <h2 class="section-title">
                 <span class="title-deco">▓▓▓</span>
@@ -311,6 +499,7 @@ class HTMLGenerator:
                         <span class="terminal-title">ABOUT.TXT</span>
                     </div>
                     <div class="terminal-body">
+<<<<<<< HEAD
                         <p><span class="prompt">C:\\CTPFA></span> ABOUT.EXE</p>
                         <p class="terminal-text">
                             ╔════════════════════════════════════════╗<br>
@@ -323,6 +512,21 @@ class HTMLGenerator:
                             ║  Desde los primeros ordenadores hasta  ║<br>
                             ║  los clásicos del cine y la música,    ║<br>
                             ║  aquí encontrarás todo lo retro.       ║<br>
+=======
+                        <p><span class="prompt">C:\\CTPFA></span> ABOUT-y0.EXE</p>
+                        <p class="terminal-text">
+                            ╔════════════════════════════════════════╗<br>
+                            ║  CTPFA - EST. 1982                     ║<br>
+                            ╠════════════════════════════════════════╣<br>
+                            ║  Esto es un portal dedicado a preservar║<br>
+                            ║  la memoria de la era dorada de cuando ║<br>
+                            ║  las cosas se hacían divertidas.       ║<br>
+                            ║                                        ║<br>
+                            ║  Desde los primeros ordenadores hasta  ║<br>
+                            ║  los apuntes de seguridad informática, ║<br>
+                            ║  aquí encontrarás todo esto y más ...  ║<br>
+                            ║  hasta que me canse                    ║<br>
+>>>>>>> e48a5e5 (Trabajo inicial)
                             ╚════════════════════════════════════════╝
                         </p>
                         <p><span class="prompt">C:\\CTPFA></span> <span class="cursor">█</span></p>
@@ -358,7 +562,11 @@ class HTMLGenerator:
     <footer class="footer">
         <div class="footer-content">
             <p class="footer-text">════════════════════════════════════════════════════════</p>
+<<<<<<< HEAD
             <p class="footer-copy">© 2026 Cualquier Tiempo Pasado Fue Anterior - Todos los derechos reservados</p>
+=======
+            <p class="footer-copy">© 2026 Cualquier Tiempo Pasado Fue Anterior - Ni derechos ni ná</p>
+>>>>>>> e48a5e5 (Trabajo inicial)
             <p class="footer-info">Optimizado para Netscape Navigator 4.0+ | Resolución: 800x600</p>
             <p class="footer-counter">
                 <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='31'%3E%3Crect fill='%23000' width='88' height='31'/%3E%3Ctext x='44' y='20' text-anchor='middle' fill='%2300ff00' font-family='monospace' font-size='12'%3E{published_count:06d}%3C/text%3E%3C/svg%3E" alt="Contador de visitas" width="88" height="31">

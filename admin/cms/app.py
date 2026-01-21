@@ -17,6 +17,68 @@ from .html_generator import HTMLGenerator
 from .uploader import FileUploader, SFTPUploader, build_web_url
 
 
+<<<<<<< HEAD
+=======
+class ToolTip:
+    """Clase para mostrar tooltips en widgets"""
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip_window = None
+        self.id = None
+        self.x = self.y = 0
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+        self.widget.bind("<ButtonPress>", self.leave)
+
+    def enter(self, event=None):
+        self.schedule()
+
+    def leave(self, event=None):
+        self.unschedule()
+        self.hidetip()
+
+    def schedule(self):
+        self.unschedule()
+        self.id = self.widget.after(500, self.showtip)
+
+    def unschedule(self):
+        id = self.id
+        self.id = None
+        if id:
+            self.widget.after_cancel(id)
+
+    def showtip(self, event=None):
+        x = y = 0
+        x, y, cx, cy = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 25
+        
+        # Ajuste retro
+        x += 5
+        y += 5
+
+        self.tooltip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        
+        from .theme import RetroTheme
+        
+        label = tk.Label(tw, text=self.text, justify='left',
+                       background=RetroTheme.BG_DARK, 
+                       foreground=RetroTheme.NEON_YELLOW,
+                       relief='solid', borderwidth=1,
+                       font=("Courier New", 8))
+        label.pack(ipadx=5, ipady=2)
+
+    def hidetip(self):
+        tw = self.tooltip_window
+        self.tooltip_window = None
+        if tw:
+            tw.destroy()
+
+
+>>>>>>> e48a5e5 (Trabajo inicial)
 class RetroCMSApp:
     """Aplicación principal del CMS"""
     
@@ -55,6 +117,12 @@ class RetroCMSApp:
         menu_archivo.add_command(label="Nuevo artículo", command=self.new_article)
         menu_archivo.add_command(label="Guardar artículo", command=self.save_article)
         menu_archivo.add_separator()
+<<<<<<< HEAD
+=======
+        menu_archivo.add_command(label="Importar del servidor", command=self.import_from_server)
+        menu_archivo.add_command(label="Descargar como Markdown", command=self.download_as_markdown)
+        menu_archivo.add_separator()
+>>>>>>> e48a5e5 (Trabajo inicial)
         menu_archivo.add_command(label="Configuración", command=self.show_config)
         menu_archivo.add_separator()
         menu_archivo.add_command(label="Salir", command=self.root.quit)
@@ -108,8 +176,15 @@ class RetroCMSApp:
           text_widget.config(state=tk.DISABLED)
           text_widget.pack(fill=tk.BOTH, expand=True)
 
+<<<<<<< HEAD
           ttk.Button(frame, text="[ CERRAR ]", style='Retro.TButton',
                         command=guide_window.destroy).pack(pady=(15, 0))
+=======
+          btn_close = ttk.Button(frame, text="[ CERRAR ]", style='Retro.TButton',
+                        command=guide_window.destroy)
+          btn_close.pack(pady=(15, 0))
+          ToolTip(btn_close, "Cerrar ventana de ayuda")
+>>>>>>> e48a5e5 (Trabajo inicial)
     
     def show_about(self):
         """Muestra información sobre la aplicación"""
@@ -209,12 +284,25 @@ class RetroCMSApp:
             webbrowser.open("https://github.com/sapoclay/ctpfa")
         
         # Botón GitHub
+<<<<<<< HEAD
         ttk.Button(btn_frame, text="[ GITHUB ]", style='Retro.TButton',
                   command=open_github).pack(side=tk.LEFT, padx=5)
         
         # Botón cerrar
         ttk.Button(btn_frame, text="[ CERRAR ]", style='Retro.TButton',
                   command=about_window.destroy).pack(side=tk.LEFT, padx=5)
+=======
+        btn_github = ttk.Button(btn_frame, text="[ GITHUB ]", style='Retro.TButton',
+                  command=open_github)
+        btn_github.pack(side=tk.LEFT, padx=5)
+        ToolTip(btn_github, "Visitar repositorio del proyecto")
+        
+        # Botón cerrar
+        btn_close = ttk.Button(btn_frame, text="[ CERRAR ]", style='Retro.TButton',
+                  command=about_window.destroy)
+        btn_close.pack(side=tk.LEFT, padx=5)
+        ToolTip(btn_close, "Cerrar ventana")
+>>>>>>> e48a5e5 (Trabajo inicial)
     
     def setup_styles(self):
         """Configura los estilos ttk"""
@@ -281,10 +369,27 @@ class RetroCMSApp:
         btn_frame = ttk.Frame(header, style='Retro.TFrame')
         btn_frame.pack(side=tk.RIGHT)
         
+<<<<<<< HEAD
         ttk.Button(btn_frame, text="⚙ Config", style='Retro.TButton',
                   command=self.show_config).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_frame, text="↑ Sincronizar TODO", style='Retro.TButton',
                   command=self.publish_all).pack(side=tk.LEFT, padx=2)
+=======
+        btn_config = ttk.Button(btn_frame, text="⚙ Config", style='Retro.TButton',
+                  command=self.show_config)
+        btn_config.pack(side=tk.LEFT, padx=2)
+        ToolTip(btn_config, "Configurar conexión y autor")
+
+        btn_import = ttk.Button(btn_frame, text="↓ Importar", style='Retro.TButton',
+                  command=self.import_from_server)
+        btn_import.pack(side=tk.LEFT, padx=2)
+        ToolTip(btn_import, "Importar artículos del servidor")
+
+        btn_upload = ttk.Button(btn_frame, text="↑ Subir Todo", style='Retro.TButton',
+                  command=self.publish_all)
+        btn_upload.pack(side=tk.LEFT, padx=2)
+        ToolTip(btn_upload, "Sincronizar todos los artículos pendientes")
+>>>>>>> e48a5e5 (Trabajo inicial)
     
     def create_article_list(self, parent):
         """Crea el panel de lista de artículos"""
@@ -314,10 +419,22 @@ class RetroCMSApp:
         btn_frame = ttk.Frame(list_frame, style='Retro.TFrame')
         btn_frame.pack(fill=tk.X, pady=5)
         
+<<<<<<< HEAD
         ttk.Button(btn_frame, text="+ Nuevo", style='Retro.TButton',
                   command=self.new_article).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_frame, text="✕ Eliminar", style='Retro.TButton',
                   command=self.delete_article).pack(side=tk.LEFT, padx=2)
+=======
+        btn_new = ttk.Button(btn_frame, text="+ Nuevo", style='Retro.TButton',
+                  command=self.new_article)
+        btn_new.pack(side=tk.LEFT, padx=2)
+        ToolTip(btn_new, "Crear nuevo borrador")
+
+        btn_del = ttk.Button(btn_frame, text="✕ Eliminar", style='Retro.TButton',
+                  command=self.delete_article)
+        btn_del.pack(side=tk.LEFT, padx=2)
+        ToolTip(btn_del, "Eliminar artículo seleccionado")
+>>>>>>> e48a5e5 (Trabajo inicial)
     
     def create_editor(self, parent):
         """Crea el panel del editor"""
@@ -396,6 +513,7 @@ class RetroCMSApp:
         edit_btn_frame = ttk.Frame(editor_frame, style='Retro.TFrame')
         edit_btn_frame.pack(fill=tk.X, pady=5)
         
+<<<<<<< HEAD
         ttk.Button(edit_btn_frame, text="Guardar", style='Retro.TButton',
                   command=self.save_article).pack(side=tk.LEFT, padx=2)
         ttk.Button(edit_btn_frame, text="Publicar", style='Retro.TButton',
@@ -404,6 +522,27 @@ class RetroCMSApp:
                   command=self.preview_article).pack(side=tk.LEFT, padx=2)
         ttk.Button(edit_btn_frame, text="Limpiar", style='Retro.TButton',
                   command=self.clear_editor).pack(side=tk.LEFT, padx=2)
+=======
+        btn_save = ttk.Button(edit_btn_frame, text="Guardar", style='Retro.TButton',
+                  command=self.save_article)
+        btn_save.pack(side=tk.LEFT, padx=2)
+        ToolTip(btn_save, "Guardar cambios localmente (Ctrl+S)")
+
+        btn_pub = ttk.Button(edit_btn_frame, text="Publicar", style='Retro.TButton',
+                  command=self.publish_current_article)
+        btn_pub.pack(side=tk.LEFT, padx=2)
+        ToolTip(btn_pub, "Subir este artículo al servidor")
+
+        btn_prev = ttk.Button(edit_btn_frame, text="Vista previa", style='Retro.TButton',
+                  command=self.preview_article)
+        btn_prev.pack(side=tk.LEFT, padx=2)
+        ToolTip(btn_prev, "Ver cómo quedará el artículo")
+
+        btn_clear = ttk.Button(edit_btn_frame, text="Limpiar", style='Retro.TButton',
+                  command=self.clear_editor)
+        btn_clear.pack(side=tk.LEFT, padx=2)
+        ToolTip(btn_clear, "Borrar campos del editor")
+>>>>>>> e48a5e5 (Trabajo inicial)
         
         self.current_article_id = None
     
@@ -594,6 +733,7 @@ class RetroCMSApp:
         with open(preview_path, 'w', encoding='utf-8') as f:
             f.write(html)
         
+<<<<<<< HEAD
         # Abrir en navegador (fix para Firefox/Snap)
         import webbrowser
         gtk_path = os.environ.pop('GTK_PATH', None)
@@ -602,6 +742,30 @@ class RetroCMSApp:
         finally:
             if gtk_path:
                 os.environ['GTK_PATH'] = gtk_path
+=======
+        # Abrir en navegador
+        import sys
+        import subprocess
+        
+        path_str = str(preview_path.absolute())
+        
+        try:
+            if sys.platform.startswith('linux'):
+                subprocess.run(['xdg-open', path_str])
+            elif sys.platform == 'darwin':
+                subprocess.run(['open', path_str])
+            elif sys.platform == 'win32':
+                os.startfile(path_str)
+            else:
+                import webbrowser
+                webbrowser.open(f'file://{path_str}')
+        except Exception as e:
+            # Fallback
+            import webbrowser
+            webbrowser.open(f'file://{path_str}')
+            print(f"Error abriendo navegador: {e}")
+
+>>>>>>> e48a5e5 (Trabajo inicial)
         self.set_status("Vista previa abierta en navegador")
     
     def show_config(self):
@@ -719,8 +883,15 @@ class RetroCMSApp:
             RetroMessageBox.showsuccess(self.root, "Éxito", "Configuración guardada")
             config_window.destroy()
         
+<<<<<<< HEAD
         ttk.Button(frame, text="Guardar", style='Retro.TButton',
                   command=save_config).pack(pady=20)
+=======
+        btn_save = ttk.Button(frame, text="Guardar", style='Retro.TButton',
+                  command=save_config)
+        btn_save.pack(pady=20)
+        ToolTip(btn_save, "Guardar cambios y cerrar")
+>>>>>>> e48a5e5 (Trabajo inicial)
     
     def show_upload_animation(self, on_complete_callback):
         """Muestra una ventana con animación retro de subida"""
@@ -890,6 +1061,7 @@ class RetroCMSApp:
             # Botón para abrir en navegador (solo si hay URL y fue exitoso)
             if success and url:
                 def open_in_browser():
+<<<<<<< HEAD
                     import webbrowser
                     gtk_path = os.environ.pop('GTK_PATH', None)
                     try:
@@ -909,6 +1081,39 @@ class RetroCMSApp:
                 self.anim_btn_frame, "CERRAR",
                 close_color, self.anim_window.destroy
             )
+=======
+                    import sys
+                    import subprocess
+                    import webbrowser
+                    
+                    try:
+                        if sys.platform.startswith('linux'):
+                            subprocess.run(['xdg-open', url])
+                        elif sys.platform == 'darwin':
+                            subprocess.run(['open', url])
+                        elif sys.platform == 'win32':
+                            os.startfile(url)
+                        else:
+                            webbrowser.open(url)
+                    except Exception as e:
+                        # Fallback
+                        webbrowser.open(url)
+                        print(f"Error abriendo navegador: {e}")
+                
+                btn_browser = create_retro_button(
+                    self.anim_btn_frame, "ABRIR EN NAVEGADOR",
+                    RetroTheme.NEON_CYAN, open_in_browser
+                )
+                ToolTip(btn_browser, "Ver sitio web publicado")
+            
+            # Botón para cerrar
+            close_color = RetroTheme.NEON_GREEN if success else RetroTheme.NEON_YELLOW
+            btn_close = create_retro_button(
+                self.anim_btn_frame, "CERRAR",
+                close_color, self.anim_window.destroy
+            )
+            ToolTip(btn_close, "Cerrar ventana")
+>>>>>>> e48a5e5 (Trabajo inicial)
     
     def show_retro_validation_error(self, missing_fields):
         """Muestra un mensaje de error retro cuando faltan campos"""
@@ -951,8 +1156,16 @@ class RetroCMSApp:
         
         tk.Label(frame, text="",bg='#000000').pack(pady=5)
         
+<<<<<<< HEAD
         ttk.Button(frame, text="[ ENTENDIDO ]", style='Retro.TButton',
                   command=error_window.destroy).pack(pady=10)
+=======
+        
+        btn_ok = ttk.Button(frame, text="[ ENTENDIDO ]", style='Retro.TButton',
+                  command=error_window.destroy)
+        btn_ok.pack(pady=10)
+        ToolTip(btn_ok, "Cerrar alerta y corregir campos")
+>>>>>>> e48a5e5 (Trabajo inicial)
     
     def publish_current_article(self):
         """Publica el artículo actual al servidor"""
@@ -1194,6 +1407,209 @@ class RetroCMSApp:
         
         # Mostrar ventana de animación y ejecutar
         self.show_upload_animation(lambda: threading.Thread(target=do_upload).start())
+<<<<<<< HEAD
+=======
+
+    def import_from_server(self):
+        """Importa artículos desde el servidor"""
+        server = self.config.get("server")
+        if not server.get("host"):
+            RetroMessageBox.showerror(self.root, "Error", "Configura el servidor primero")
+            return
+            
+        if not RetroMessageBox.askyesno(self.root, "Importar del servidor", 
+                "Se buscarán artículos en el servidor y se importarán a local.\n"
+                "Los artículos existentes se actualizarán.\n\n"
+                "¿Continuar?"):
+            return
+
+        def do_import():
+            try:
+                import time
+                
+                protocol = server.get('protocol', 'ftp').upper()
+                
+                self.anim_add_line("CTPFA IMPORT SYSTEM v1.0")
+                self.anim_add_line("─" * 40)
+                time.sleep(0.3)
+                
+                self.anim_add_line(f"> Conectando a {server['host']} ({protocol})...")
+                self.anim_set_status(f"Estableciendo conexión {protocol}...")
+                
+                uploader = FileUploader(self.config)
+                uploader.connect()
+                
+                self.anim_add_line("  ✓ Conexión establecida")
+                time.sleep(0.2)
+                
+                self.anim_add_line("")
+                self.anim_add_line("> Listando archivos remotos...")
+                remote_path = server['remote_path']
+                
+                # Listar archivos
+                files = uploader.list_files(remote_path)
+                
+                # Filtrar solo .html ignorando index.html y articulo.html (plantilla)
+                article_files = [
+                    f for f in files 
+                    if f.endswith('.html') and f not in ['index.html', 'articulo.html']
+                ]
+                
+                self.anim_add_line(f"  ✓ Encontrados {len(article_files)} artículos")
+                
+                if not article_files:
+                    self.anim_add_line("  ! No hay artículos para importar")
+                    time.sleep(1)
+                    uploader.disconnect()
+                    self.anim_finish(True, "No se encontraron artículos nuevos")
+                    return
+
+                total = len(article_files)
+                imported_count = 0
+                
+                self.anim_add_line("")
+                self.anim_add_line("> Iniciando descarga e importación...")
+                self.anim_add_line("")
+                
+                for i, filename in enumerate(article_files):
+                    self.anim_add_line(f"  [{i+1}/{total}] {filename}")
+                    self.anim_set_status(f"Importando: {filename}...")
+                    self.anim_update_progress(i, total)
+                    
+                    # Descargar contenido
+                    remote_file = f"{remote_path}/{filename}"
+                    content = uploader.download_string(remote_file)
+                    
+                    if content:
+                        # Importar (overwrite=False para respetar locales)
+                        article = self.articles.import_article_from_html(content, filename, overwrite=False)
+                        if article:
+                            self.anim_add_line(f"        → Importado: {article['title'][:30]}")
+                            imported_count += 1
+                        else:
+                            # Puede devolver None si falló O si ya existía (y overwrite=False)
+                            # Verificamos si existe para dar mensaje adecuado
+                            article_id = filename.replace('.html', '')
+                            if self.articles.get_article(article_id):
+                                self.anim_add_line(f"        → Omitido (Ya existe localmente)")
+                            else:
+                                self.anim_add_line("        ✗ Fallo al importar")
+                    else:
+                        self.anim_add_line("        ✗ Fallo al descargar")
+                        
+                    time.sleep(0.1)
+                
+                self.anim_update_progress(total, total)
+                self.anim_add_line("")
+                self.anim_add_line("> Cerrando conexión...")
+                uploader.disconnect()
+                
+                self.anim_finish(True, f"Se importaron {imported_count} artículo(s)")
+                self.set_status(f"✓ Importados {imported_count} artículos")
+                
+                # Actualizar lista en el hilo principal
+                self.root.after(0, self.refresh_article_list)
+                
+            except Exception as e:
+                self.anim_finish(False, str(e))
+                self.set_status(f"Error: {str(e)}")
+
+        # Mostrar ventana de animación y ejecutar
+        self.show_upload_animation(lambda: threading.Thread(target=do_import).start())
+
+    def download_as_markdown(self):
+        """Descarga artículos del servidor como archivos Markdown"""
+        server = self.config.get("server")
+        if not server.get("host"):
+            RetroMessageBox.showerror(self.root, "Error", "Configura el servidor primero")
+            return
+
+        # Pedir directorio de destino
+        dest_dir = tk.filedialog.askdirectory(title="Seleccionar carpeta de destino")
+        if not dest_dir:
+            return
+
+        def do_download():
+            try:
+                import time
+                import os
+                
+                protocol = server.get('protocol', 'ftp').upper()
+                
+                self.anim_add_line("CTPFA DOWNLOADER v1.0")
+                self.anim_add_line("─" * 40)
+                
+                self.anim_add_line(f"> Conectando a {server['host']}...")
+                self.anim_set_status(f"Conectando {protocol}...")
+                
+                uploader = FileUploader(self.config)
+                uploader.connect()
+                
+                self.anim_add_line("  ✓ Conexión establecida")
+                
+                remote_path = server['remote_path']
+                files = uploader.list_files(remote_path)
+                article_files = [f for f in files if f.endswith('.html') and f not in ['index.html', 'articulo.html']]
+                
+                if not article_files:
+                    self.anim_add_line("  ! No hay artículos")
+                    uploader.disconnect()
+                    self.anim_finish(True, "Sin artículos")
+                    return
+
+                total = len(article_files)
+                count = 0
+                
+                self.anim_add_line(f"> Descargando {total} artículos...")
+                
+                for i, filename in enumerate(article_files):
+                    self.anim_add_line(f"  [{i+1}/{total}] {filename}")
+                    self.anim_update_progress(i, total)
+                    
+                    # Descargar
+                    remote_file = f"{remote_path}/{filename}"
+                    content = uploader.download_string(remote_file)
+                    
+                    if content:
+                        # Extraer datos sin guardar
+                        data = self.articles.extract_article_data(content, filename)
+                        if data:
+                            # Crear contenido Markdown
+                            md_content = f"""---
+title: {data['title']}
+category: {data['category']}
+tags: {', '.join(data.get('tags', []))}
+date: {data.get('created', '')}
+---
+
+{data['content']}
+"""
+                            # Guardar archivo .md
+                            slug = data.get('id', filename.replace('.html', ''))
+                            local_path = os.path.join(dest_dir, f"{slug}.md")
+                            
+                            with open(local_path, 'w', encoding='utf-8') as f:
+                                f.write(md_content)
+                                
+                            self.anim_add_line(f"        → Guardado: {slug}.md")
+                            count += 1
+                        else:
+                            self.anim_add_line("        ✗ Error extrayendo datos")
+                    
+                    time.sleep(0.1)
+                
+                self.anim_update_progress(total, total)
+                uploader.disconnect()
+                
+                self.anim_finish(True, f"Descargados {count} archivos .md")
+                self.set_status(f"✓ Descarga completada en {dest_dir}")
+                
+            except Exception as e:
+                self.anim_finish(False, str(e))
+                self.set_status(f"Error: {str(e)}")
+
+        self.show_upload_animation(lambda: threading.Thread(target=do_download).start())
+>>>>>>> e48a5e5 (Trabajo inicial)
     
     def set_status(self, message):
         """Actualiza la barra de estado"""

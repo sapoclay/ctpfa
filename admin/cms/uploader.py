@@ -209,6 +209,48 @@ class FileUploader:
                 raise ConnectionError("No hay conexión FTP activa")
             self.ftp.delete(remote_path)
 
+<<<<<<< HEAD
+=======
+    def list_files(self, remote_path):
+        """Lista archivos en un directorio remoto"""
+        if self.protocol == "sftp":
+            if self.sftp is None:
+                raise ConnectionError("No hay conexión SFTP activa")
+            try:
+                return self.sftp.listdir(remote_path)
+            except IOError:
+                return []
+        else:
+            if self.ftp is None:
+                raise ConnectionError("No hay conexión FTP activa")
+            try:
+                # nlst devuelve lista de nombres de archivo (a veces con path)
+                items = self.ftp.nlst(remote_path)
+                return [os.path.basename(item) for item in items]
+            except:
+                return []
+
+    def download_string(self, remote_path):
+        """Descarga un archivo remoto como string"""
+        if self.protocol == "sftp":
+            if self.sftp is None:
+                raise ConnectionError("No hay conexión SFTP activa")
+            try:
+                with self.sftp.open(remote_path, 'r') as f:
+                    return f.read().decode('utf-8')
+            except IOError:
+                return None
+        else:
+            if self.ftp is None:
+                raise ConnectionError("No hay conexión FTP activa")
+            try:
+                bio = io.BytesIO()
+                self.ftp.retrbinary(f'RETR {remote_path}', bio.write)
+                return bio.getvalue().decode('utf-8')
+            except:
+                return None
+
+>>>>>>> e48a5e5 (Trabajo inicial)
 
 # Alias para compatibilidad
 SFTPUploader = FileUploader
