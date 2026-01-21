@@ -1,0 +1,81 @@
+ENCABEZADOS
+─────────────────────────────────────
+## Título de sección
+   → Se convierte en: ╔═══ TÍTULO ═══╗
+
+### Subtítulo
+   → Se convierte en: ★ SUBTÍTULO ★
+
+FORMATO DE TEXTO
+─────────────────────────────────────
+**texto en negrita**
+   → texto en negrita (resaltado)
+
+*texto en cursiva*
+   → texto en cursiva
+
+__subrayado__
+   → subrayado (si el tema lo soporta)
+
+~~tachado~~
+   → texto tachado
+
+LISTAS
+─────────────────────────────────────
+- Elemento uno
+- Elemento dos
+- Elemento tres
+   → Lista con viñetas retro (►)
+
+1. Elemento numerado
+2. Otro elemento
+   → Lista numerada
+
+CITAS
+─────────────────────────────────────
+> Esta es una cita importante
+   → Bloque de cita con estilo retro
+
+CÓDIGO
+─────────────────────────────────────
+```
+10 PRINT "HOLA"
+20 GOTO 10
+```
+   → Bloque de código estilo terminal
+
+`inline code`
+   → Código en línea
+
+ENLACES E IMÁGENES
+─────────────────────────────────────
+[Texto del enlace](https://ejemplo.com)
+   → Enlace clicable
+
+![Texto alternativo](ruta/imagen.png)
+   → Imagen insertada
+
+TABLAS
+─────────────────────────────────────
+| Cabecera 1 | Cabecera 2 |
+|------------|------------|
+| Celda 1    | Celda 2    |
+| Celda 3    | Celda 4    |
+   → Tabla básica
+
+SEPARADORES
+─────────────────────────────────────
+---
+   → Línea horizontal
+
+EMOJIS
+─────────────────────────────────────
+:smile: :rocket: :star:
+   → Algunos emojis básicos
+
+PÁRRAFOS
+─────────────────────────────────────
+Simplemente escribe el texto normal.
+Deja una línea en blanco para separar párrafos.
+
+NOTA: No todos los estilos de Markdown están soportados visualmente en el tema retro, pero el contenido se procesará correctamente.

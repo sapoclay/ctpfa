@@ -1,0 +1,11 @@
+# CTPFA CMS - Dependencias
+# ================================
+
+# Para conexión SFTP al servidor
+paramiko>=3.0.0
+
+# Para cargar imágenes (logo en Acerca de)
+Pillow>=10.0.0
+
+# Tkinter viene incluido en Python estándar
+# No necesita instalarse por separado
