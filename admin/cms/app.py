@@ -185,11 +185,46 @@ class RetroCMSApp:
         menu_archivo.add_command(label="Nuevo artículo", command=self.new_article)
         menu_archivo.add_command(label="Guardar artículo", command=self.save_article)
         menu_archivo.add_separator()
-        menu_archivo.add_command(label="Descargar artículos del servidor", command=self.download_articles_from_server)
+        menu_archivo.add_command(label="Configuración", command=self.show_config)
+        menu_archivo.add_separator()
+        menu_archivo.add_command(label="Salir", command=self._on_closing)
 
         # Añadir el menú Archivo al menubar
         menubar.add_cascade(label="Archivo", menu=menu_archivo)
-        # (Si hay otros menús, añadirlos aquí)
+
+        # Menú Edición
+        menu_edicion = tk.Menu(menubar, tearoff=0, bg=RetroTheme.BG_PURPLE,
+                                fg=RetroTheme.NEON_CYAN, activebackground=RetroTheme.NEON_PINK,
+                                activeforeground=RetroTheme.BG_DARK, font=RetroTheme.FONT_MAIN)
+        menu_edicion.add_command(label="Vista previa", command=self.preview_article)
+        menu_edicion.add_command(label="Eliminar localmente", command=self.delete_article)
+        menu_edicion.add_command(label="Limpiar editor", command=self.clear_editor)
+        menubar.add_cascade(label="Edición", menu=menu_edicion)
+
+        # Menú Servidor
+        menu_servidor = tk.Menu(menubar, tearoff=0, bg=RetroTheme.BG_PURPLE,
+                                fg=RetroTheme.NEON_CYAN, activebackground=RetroTheme.NEON_PINK,
+                                activeforeground=RetroTheme.BG_DARK, font=RetroTheme.FONT_MAIN)
+        menu_servidor.add_command(label="Publicar artículo", command=self.publish_current_article)
+        menu_servidor.add_command(label="Actualizar todo", command=self.publish_all)
+        menu_servidor.add_separator()
+        menu_servidor.add_command(label="Importar artículos del servidor", command=self.download_articles_from_server)
+        menu_servidor.add_command(label="Eliminar del servidor", command=self.delete_from_server)
+        menubar.add_cascade(label="Servidor", menu=menu_servidor)
+
+        # Menú Herramientas
+        menu_herramientas = tk.Menu(menubar, tearoff=0, bg=RetroTheme.BG_PURPLE,
+                                    fg=RetroTheme.NEON_CYAN, activebackground=RetroTheme.NEON_PINK,
+                                    activeforeground=RetroTheme.BG_DARK, font=RetroTheme.FONT_MAIN)
+        menu_herramientas.add_command(label="Exportar artículos como Markdown", command=self.download_as_markdown)
+        menubar.add_cascade(label="Herramientas", menu=menu_herramientas)
+
+        # Menú Ayuda
+        menu_ayuda = tk.Menu(menubar, tearoff=0, bg=RetroTheme.BG_PURPLE,
+                             fg=RetroTheme.NEON_CYAN, activebackground=RetroTheme.NEON_PINK,
+                             activeforeground=RetroTheme.BG_DARK, font=RetroTheme.FONT_MAIN)
+        menu_ayuda.add_command(label="Acerca de", command=self.show_about)
+        menubar.add_cascade(label="Ayuda", menu=menu_ayuda)
 
         # Establecer el menubar como menú principal de la ventana
         self.root.config(menu=menubar)
@@ -280,7 +315,7 @@ class RetroCMSApp:
         
         about_window = tk.Toplevel(self.root)
         about_window.title("Acerca de")
-        about_window.geometry("450x500")
+        about_window.geometry("500x600")
         about_window.configure(bg=RetroTheme.BG_DARK)
         about_window.transient(self.root)
         about_window.resizable(False, False)
@@ -290,71 +325,33 @@ class RetroCMSApp:
         
         # Cargar y mostrar logo
         logo_path = Path(__file__).parent.parent / "Img" / "logo.png"
-
-        def download_as_markdown(self):
-            """Descarga artículos del servidor como archivos Markdown"""
-            server = self.config.get("server")
-            if not server.get("host"):
-                RetroMessageBox.showerror(self.root, "Error", "Configura el servidor primero")
-                return
-
-            dest_dir = filedialog.askdirectory(title="Seleccionar carpeta de destino")
-            if not dest_dir:
-                return
-
-            def do_download():
-                try:
-                    import time
-                    import os
-                    protocol = server.get('protocol', 'ftp').upper()
-                    self.anim_add_line(f"> Conectando a {server['host']}...")
-                    self.anim_set_status(f"Conectando {protocol}...")
-                    uploader = FileUploader(self.config)
-                    uploader.connect()
-                    self.anim_add_line("  ✓ Conexión establecida")
-                    remote_path = server['remote_path']
-                    files = uploader.list_files(remote_path)
-                    article_files = [f for f in files if f.endswith('.html') and f not in ['index.html', 'articulo.html']]
-                    if not article_files:
-                        self.anim_add_line("  ! No hay artículos")
-                        uploader.disconnect()
-                        self.anim_finish(True, "Sin artículos")
-                        return
-                    total = len(article_files)
-                    count = 0
-                    self.anim_add_line(f"> Descargando {total} artículos...")
-                    for i, filename in enumerate(article_files):
-                        self.anim_add_line(f"  [{i+1}/{total}] {filename}")
-                        self.anim_update_progress(i, total)
-                        remote_file = f"{remote_path}/{filename}"
-                        content = uploader.download_string(remote_file)
-                        if content:
-                            data = self.articles.extract_article_data(content, filename)
-                            if data:
-                                md_body = data.get('content', '').strip()
-                                if not md_body:
-                                    md_body = '*[El contenido del artículo está vacío o no se pudo extraer.]*'
-                                md_content = f"""---\ntitle: {data.get('title','')}\ncategory: {data.get('category','')}\ntags: {', '.join(data.get('tags', []))}\ndate: {data.get('created', '')}\n---\n\n{md_body}\n"""
-                                slug = data.get('id', filename.replace('.html', ''))
-                                local_path = os.path.join(dest_dir, f"{slug}.md")
-                                with open(local_path, 'w', encoding='utf-8') as f:
-                                    f.write(md_content)
-                                self.anim_add_line(f"        → Guardado: {slug}.md")
-                                count += 1
-                            else:
-                                self.anim_add_line("        ✗ Error extrayendo datos")
-                        else:
-                            self.anim_add_line("        ✗ Fallo al descargar")
-                        time.sleep(0.1)
-                    self.anim_update_progress(total, total)
-                    uploader.disconnect()
-                    self.anim_finish(True, f"Descargados {count} archivos .md")
-                    self.set_status(f"✓ Descarga completada en {dest_dir}")
-                except Exception as e:
-                    self.anim_finish(False, str(e))
-                    self.set_status(f"Error: {str(e)}")
-
-
+        if logo_path.exists():
+            try:
+                self.logo_img = tk.PhotoImage(file=str(logo_path))
+                # Redimensionar si es muy grande (Tkinter PhotoImage simple)
+                if self.logo_img.width() > 400:
+                    subsample = self.logo_img.width() // 200
+                    self.logo_img = self.logo_img.subsample(subsample, subsample)
+                
+                logo_label = tk.Label(frame, image=self.logo_img, bg=RetroTheme.BG_DARK)
+                logo_label.pack(pady=(0, 10))
+            except Exception as e:
+                print(f"Error cargando logo: {e}")
+        
+        # Título y descripción
+        tk.Label(frame, text="⚡ CTPFA CMS v1.0 ⚡", 
+                 bg=RetroTheme.BG_DARK, fg=RetroTheme.NEON_PINK,
+                 font=("Courier New", 14, "bold")).pack(pady=5)
+        
+        desc_text = ("Gestor de contenidos retro para el portal\n"
+                     "Cualquier Tiempo Pasado Fue Anterior.\n\n"
+                     "Permite redactar, previsualizar y publicar\n"
+                     "artículos con la estética romántica de\n"
+                     "la informática de los años 80.")
+        
+        tk.Label(frame, text=desc_text, 
+                 bg=RetroTheme.BG_DARK, fg=RetroTheme.TEXT_PRIMARY,
+                 font=("Courier New", 10), justify=tk.CENTER).pack(pady=10)
         
         # Frame para botones
         btn_frame = ttk.Frame(frame, style='Retro.TFrame')
@@ -362,19 +359,73 @@ class RetroCMSApp:
         
         def open_github():
             """Abre GitHub en el navegador (con fix para Linux/Snap)"""
-            # Fix para error de Firefox en Linux con Snap
             if 'GTK_PATH' in os.environ:
                 del os.environ['GTK_PATH']
             webbrowser.open("https://github.com/sapoclay/ctpfa")
         
         # Botón GitHub
-        btn_github = tk.Button(btn_frame, text="[ GITHUB ]", font=("Courier New", 10), fg=RetroTheme.NEON_GREEN, bg=RetroTheme.BG_DARK, bd=0, highlightthickness=1, highlightbackground=RetroTheme.NEON_GREEN, cursor="hand2", command=open_github)
+        btn_github = tk.Button(btn_frame, text="[ GITHUB ]", font=("Courier New", 10), 
+                               fg=RetroTheme.NEON_GREEN, bg=RetroTheme.BG_DARK, bd=0, 
+                               highlightthickness=1, highlightbackground=RetroTheme.NEON_GREEN, 
+                               cursor="hand2", command=open_github)
         btn_github.pack(side=tk.LEFT, padx=5)
         ToolTip(btn_github, "Visitar repositorio del proyecto")
         
+        # Botón Diccionario MD
+        btn_dict = tk.Button(btn_frame, text="[ DICCIONARIO MD ]", font=("Courier New", 10), 
+                             fg=RetroTheme.NEON_CYAN, bg=RetroTheme.BG_DARK, bd=0, 
+                             highlightthickness=1, highlightbackground=RetroTheme.NEON_CYAN, 
+                             cursor="hand2", command=self.show_markdown_dictionary)
+        btn_dict.pack(side=tk.LEFT, padx=5)
+        ToolTip(btn_dict, "Guía rápida de sintaxis Markdown")
+        
         # Botón cerrar
-        btn_close = tk.Button(btn_frame, text="[ CERRAR ]", font=("Courier New", 10), fg=RetroTheme.NEON_GREEN, bg=RetroTheme.BG_DARK, bd=0, highlightthickness=1, highlightbackground=RetroTheme.NEON_GREEN, cursor="hand2", command=about_window.destroy)
+        btn_close = tk.Button(btn_frame, text="[ CERRAR ]", font=("Courier New", 10), 
+                              fg=RetroTheme.NEON_YELLOW, bg=RetroTheme.BG_DARK, bd=0, 
+                              highlightthickness=1, highlightbackground=RetroTheme.NEON_YELLOW, 
+                              cursor="hand2", command=about_window.destroy)
         btn_close.pack(side=tk.LEFT, padx=5)
+        ToolTip(btn_close, "Cerrar ventana")
+
+    def show_markdown_dictionary(self):
+        """Muestra una ventana con la guía de Markdown"""
+        dict_window = tk.Toplevel(self.root)
+        dict_window.title("Diccionario Markdown")
+        dict_window.geometry("600x650")
+        dict_window.configure(bg=RetroTheme.BG_DARK)
+        dict_window.transient(self.root)
+        
+        frame = ttk.Frame(dict_window, style='Retro.TFrame')
+        frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        ttk.Label(frame, text="═══ GUÍA DE SINTAXIS MARKDOWN ═══", 
+                 style='Title.TLabel').pack(pady=(0, 10))
+        
+        # Área de texto con la guía
+        help_text = scrolledtext.ScrolledText(
+            frame, width=70, height=25,
+            bg=RetroTheme.BG_PURPLE, fg=RetroTheme.TEXT_PRIMARY,
+            insertbackground=RetroTheme.NEON_GREEN,
+            font=("Courier New", 10), wrap=tk.WORD
+        )
+        help_text.pack(fill=tk.BOTH, expand=True, pady=10)
+        
+        # Cargar contenido de la guía
+        guide_path = Path(__file__).parent / "markdown_guide.txt"
+        if guide_path.exists():
+            with open(guide_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            help_text.insert(tk.END, content)
+        else:
+            help_text.insert(tk.END, "Error: No se encontró el archivo markdown_guide.txt")
+        
+        help_text.config(state=tk.DISABLED)
+        
+        btn_close = tk.Button(frame, text="[ CERRAR ]", font=("Courier New", 10), 
+                              fg=RetroTheme.NEON_GREEN, bg=RetroTheme.BG_DARK, bd=0, 
+                              highlightthickness=1, highlightbackground=RetroTheme.NEON_GREEN, 
+                              cursor="hand2", command=dict_window.destroy)
+        btn_close.pack(pady=10)
         ToolTip(btn_close, "Cerrar ventana")
     
     def setup_styles(self):
@@ -532,6 +583,8 @@ class RetroCMSApp:
         ToolTip(btn_delete_server, "Eliminar artículo del servidor web")
         btn_update_all = create_retro_main_button(edit_btn_frame, "Actualizar todo", self.publish_all)
         ToolTip(btn_update_all, "Actualizar todos los artículos en el servidor")
+        btn_import = create_retro_main_button(edit_btn_frame, "Importar todo", self.download_articles_from_server)
+        ToolTip(btn_import, "Descargar artículos nuevos del servidor web")
         self.current_article_id = None
     
     def create_status_bar(self, parent):
@@ -816,7 +869,8 @@ class RetroCMSApp:
                 font=RetroTheme.FONT_SMALL).pack(anchor=tk.W, pady=(0, 8))
         
         # Opción de auto-index
-        auto_index_var = tk.BooleanVar(value=self.config.get("site", "auto_index"))
+        current_auto_index = self.config.get("site", "auto_index")
+        auto_index_var = tk.BooleanVar(value=bool(current_auto_index) if current_auto_index is not None else True)
         auto_index_check = tk.Checkbutton(
             frame, text="Actualizar índice automáticamente",
             variable=auto_index_var,

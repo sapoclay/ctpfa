@@ -49,9 +49,27 @@ class ConfigManager:
             json.dump(self.config, f, indent=4, ensure_ascii=False)
     
     def get(self, *keys):
+        """Obtiene un valor de la configuración con fallback a DEFAULT_CONFIG"""
+        # Intentar obtener de la configuración cargada
         value = self.config
+        found = True
         for key in keys:
-            value = value.get(key, {})
+            if isinstance(value, dict) and key in value:
+                value = value[key]
+            else:
+                found = False
+                break
+        
+        if found:
+            return value
+            
+        # Fallback a DEFAULT_CONFIG
+        value = self.DEFAULT_CONFIG
+        for key in keys:
+            if isinstance(value, dict) and key in value:
+                value = value[key]
+            else:
+                return None
         return value
     
     def set(self, value, *keys):
