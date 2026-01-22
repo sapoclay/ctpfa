@@ -146,23 +146,7 @@ class HTMLGenerator:
             if full_article and full_article.get('published', False):
                 published_count += 1
         cache_buster = datetime.now().strftime("%Y%m%d%H%M%S")
-        return f'''<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Cualquier Tiempo Pasado Fue Anterior - Artículos de los años 80 y 90">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>⚡ Cualquier Tiempo Pasado Fue Anterior ⚡</title>
-    <link rel="stylesheet" href="css/style.css?v={cache_buster}">
-    <style>
-        .tag-cloud {{
-            padding: 4rem 2rem;
-            background: var(--bg-secondary);
-            text-align: center;
-        }}
+        ARTICLE_TEMPLATE = '''<!DOCTYPE html>
         .cloud-content {{
             max-width: 800px;
             margin: 2rem auto;

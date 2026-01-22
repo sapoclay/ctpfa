@@ -77,6 +77,7 @@ class ToolTip:
 class RetroCMSApp:
     """Aplicación principal del CMS"""
     
+    # Categorías predefinidas
     CATEGORIES = [
         "TECNOLOGÍA", "VIDEOJUEGOS", "MÚSICA", "CINE", 
         "INTERNET", "HARDWARE", "SOFTWARE", "CULTURA", 
@@ -97,6 +98,9 @@ class RetroCMSApp:
 
         self.setup_styles()
         self.create_menu()
+        self.create_article_list(self.root)
+        self.create_editor(self.root)
+        self.create_status_bar(self.root)
         self.refresh_article_list()
 
     def set_status(self, message):
@@ -286,7 +290,37 @@ class RetroCMSApp:
         ToolTip(btn_close, "Cerrar ventana")
     
     def setup_styles(self):
-        pass
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure('Retro.TFrame',
+            background=RetroTheme.BG_DARK
+        )
+        style.configure('Retro.TLabel',
+            background=RetroTheme.BG_DARK,
+            foreground=RetroTheme.NEON_CYAN,
+            font=RetroTheme.FONT_MAIN
+        )
+        style.configure('Title.TLabel',
+            background=RetroTheme.BG_DARK,
+            foreground=RetroTheme.NEON_PINK,
+            font=RetroTheme.FONT_TITLE
+        )
+        style.configure('Retro.TButton',
+            background=RetroTheme.BG_PURPLE,
+            foreground=RetroTheme.NEON_YELLOW,
+            font=RetroTheme.FONT_MAIN,
+            borderwidth=2
+        )
+        style.map('Retro.TButton',
+            background=[('active', RetroTheme.NEON_PINK), ('!active', RetroTheme.BG_PURPLE)],
+            foreground=[('active', RetroTheme.BG_DARK), ('!active', RetroTheme.NEON_YELLOW)]
+        )
+        style.configure('Retro.TCombobox',
+            fieldbackground=RetroTheme.BG_PURPLE,
+            background=RetroTheme.BG_PURPLE,
+            foreground=RetroTheme.NEON_CYAN,
+            font=RetroTheme.FONT_MAIN
+        )
     
     def create_article_list(self, parent):
         """Crea el panel de lista de artículos"""
