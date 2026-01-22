@@ -185,65 +185,94 @@ class RetroCMSApp:
         menu_archivo.add_command(label="Nuevo artículo", command=self.new_article)
         menu_archivo.add_command(label="Guardar artículo", command=self.save_article)
         menu_archivo.add_separator()
-        # menu_archivo.add_command(label="Importar del servidor", command=self.import_from_server)  # Eliminado
-        menu_archivo.add_command(label="Descargar como Markdown", command=self.download_as_markdown)
-        menu_archivo.add_separator()
-        menu_archivo.add_command(label="Configuración", command=self.show_config)
-        menu_archivo.add_separator()
-        menu_archivo.add_command(label="Salir", command=self.root.quit)
+        menu_archivo.add_command(label="Descargar artículos del servidor", command=self.download_articles_from_server)
+
+        # Añadir el menú Archivo al menubar
         menubar.add_cascade(label="Archivo", menu=menu_archivo)
-        
-        # Menú Ayuda
-        menu_ayuda = tk.Menu(menubar, tearoff=0, bg=RetroTheme.BG_PURPLE,
-                             fg=RetroTheme.NEON_CYAN, activebackground=RetroTheme.NEON_PINK,
-                             activeforeground=RetroTheme.BG_DARK, font=RetroTheme.FONT_MAIN)
-        menu_ayuda.add_command(label="Guía de Markdown", command=self.show_markdown_guide)
-        menu_ayuda.add_separator()
-        menu_ayuda.add_command(label="Acerca de", command=self.show_about)
-        menubar.add_cascade(label="Ayuda", menu=menu_ayuda)
-        
+        # (Si hay otros menús, añadirlos aquí)
+
+        # Establecer el menubar como menú principal de la ventana
         self.root.config(menu=menubar)
-    
-    def show_markdown_guide(self):
-          """Muestra la guía de Markdown desde un archivo externo"""
-          guide_window = tk.Toplevel(self.root)
-          guide_window.title("Guía de Markdown")
-          guide_window.geometry("700x700")
-          guide_window.configure(bg=RetroTheme.BG_DARK)
-          guide_window.transient(self.root)
 
-          frame = ttk.Frame(guide_window, style='Retro.TFrame')
-          frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+    def download_articles_from_server(self):
+        """Descarga todos los artículos del servidor sin sobrescribir ni eliminar archivos locales."""
+        server = self.config.get("server")
+        if not server.get("host"):
+            RetroMessageBox.showerror(self.root, "Error", "Configura el servidor primero")
+            return
 
-          ttk.Label(frame, text="═══ GUÍA DE MARKDOWN ═══", 
-                      style='Title.TLabel').pack(pady=(0, 15))
+        if not RetroMessageBox.askyesno(
+            self.root,
+            "Descargar artículos",
+            (
+                "Se descargarán todos los artículos del servidor y se guardarán localmente solo si no existen.\n"
+                "Los archivos locales NO se sobrescribirán ni eliminarán.\n\n¿Continuar?"
+            )
+        ):
+            return
 
-          # Leer el archivo de guía
-          guide_path = Path(__file__).parent / "markdown_guide.txt"
-          try:
-                with open(guide_path, "r", encoding="utf-8") as f:
-                     guide_text = f.read()
-          except Exception as e:
-                guide_text = f"No se pudo cargar la guía de Markdown.\n\n{e}"
+        def do_download():
+            try:
+                import time
+                protocol = server.get('protocol', 'ftp').upper()
+                self.anim_add_line("CTPFA DOWNLOAD SYSTEM v1.0")
+                self.anim_add_line("─" * 40)
+                time.sleep(0.3)
+                self.anim_add_line(f"> Conectando a {server['host']} ({protocol})...")
+                self.anim_set_status(f"Estableciendo conexión {protocol}...")
+                uploader = FileUploader(self.config)
+                uploader.connect()
+                self.anim_add_line("  ✓ Conexión establecida")
+                time.sleep(0.2)
+                self.anim_add_line("")
+                self.anim_add_line("> Listando archivos remotos...")
+                remote_path = server['remote_path']
+                files = uploader.list_files(remote_path)
+                article_files = [f for f in files if f.endswith('.html') and f not in ['index.html', 'articulo.html']]
+                self.anim_add_line(f"  ✓ Encontrados {len(article_files)} artículos")
+                if not article_files:
+                    self.anim_add_line("  ! No hay artículos para descargar")
+                    time.sleep(1)
+                    uploader.disconnect()
+                    self.anim_finish(True, "No se encontraron artículos nuevos")
+                    return
+                total = len(article_files)
+                downloaded_count = 0
+                self.anim_add_line("")
+                self.anim_add_line("> Iniciando descarga...")
+                self.anim_add_line("")
+                for i, filename in enumerate(article_files):
+                    self.anim_add_line(f"  [{i+1}/{total}] {filename}")
+                    self.anim_set_status(f"Descargando: {filename}...")
+                    self.anim_update_progress(i, total)
+                    remote_file = f"{remote_path}/{filename}"
+                    content = uploader.download_string(remote_file)
+                    if content:
+                        # Solo importar si NO existe localmente
+                        article_id = filename.replace('.html', '')
+                        if self.articles.get_article(article_id):
+                            self.anim_add_line(f"        → Omitido (Ya existe localmente)")
+                        else:
+                            article = self.articles.import_article_from_html(content, filename, overwrite=False)
+                            if article:
+                                self.anim_add_line(f"        → Descargado: {article['title'][:30]}")
+                                downloaded_count += 1
+                            else:
+                                self.anim_add_line("        ✗ Fallo al importar")
+                    else:
+                        self.anim_add_line("        ✗ Fallo al descargar")
+                    time.sleep(0.1)
+                self.anim_update_progress(total, total)
+                self.anim_add_line("")
+                uploader.disconnect()
+                self.anim_finish(True, f"Descargados {downloaded_count} artículos nuevos")
+                self.set_status(f"✓ Descargados {downloaded_count} artículos nuevos")
+                self.refresh_article_list()
+            except Exception as e:
+                self.anim_finish(False, str(e))
+                self.set_status(f"Error: {str(e)}")
 
-          text_widget = tk.Text(
-                frame, 
-                width=80, 
-                height=32,
-                bg=RetroTheme.BG_PURPLE,
-                fg=RetroTheme.NEON_GREEN,
-                font=RetroTheme.FONT_MAIN,
-                wrap=tk.WORD,
-                padx=10,
-                pady=10
-          )
-          text_widget.insert('1.0', guide_text)
-          text_widget.config(state=tk.DISABLED)
-          text_widget.pack(fill=tk.BOTH, expand=True)
-
-          btn_close = tk.Button(frame, text="[ CERRAR ]", font=("Courier New", 10), fg=RetroTheme.NEON_GREEN, bg=RetroTheme.BG_DARK, bd=0, highlightthickness=1, highlightbackground=RetroTheme.NEON_GREEN, cursor="hand2", command=guide_window.destroy)
-          btn_close.pack(pady=(15, 0))
-          ToolTip(btn_close, "Cerrar ventana de ayuda")
+                self.show_upload_animation(lambda: threading.Thread(target=do_download).start())
     
     def show_about(self):
         """Muestra información sobre la aplicación"""
@@ -786,6 +815,17 @@ class RetroCMSApp:
                 bg=RetroTheme.BG_DARK, fg=RetroTheme.TEXT_SECONDARY,
                 font=RetroTheme.FONT_SMALL).pack(anchor=tk.W, pady=(0, 8))
         
+        # Opción de auto-index
+        auto_index_var = tk.BooleanVar(value=self.config.get("site", "auto_index"))
+        auto_index_check = tk.Checkbutton(
+            frame, text="Actualizar índice automáticamente",
+            variable=auto_index_var,
+            bg=RetroTheme.BG_DARK, fg=RetroTheme.NEON_CYAN,
+            selectcolor=RetroTheme.BG_PURPLE, activebackground=RetroTheme.BG_DARK,
+            font=RetroTheme.FONT_MAIN
+        )
+        auto_index_check.pack(anchor=tk.W, pady=(0, 10))
+        
         def save_config():
             self.config.set(protocol_var.get(), "server", "protocol")
             self.config.set(entries['host'].get(), "server", "host")
@@ -795,6 +835,7 @@ class RetroCMSApp:
             self.config.set(entries['key_file'].get(), "server", "key_file")
             self.config.set(entries['remote_path'].get(), "server", "remote_path")
             self.config.set(author_entry.get() or "Admin", "site", "author")
+            self.config.set(auto_index_var.get(), "site", "auto_index")
             self.config.save()
             RetroMessageBox.showsuccess(self.root, "Éxito", "Configuración guardada")
             config_window.destroy()
@@ -1128,6 +1169,12 @@ class RetroCMSApp:
                 
                 # Generar HTML del artículo
                 html = self.generator.generate_article_html(full_article)
+                if html is None:
+                    self.anim_add_line(f"  ✗ Error: El artículo '{title}' no pudo ser convertido a HTML.")
+                    self.anim_finish(False, f"No se pudo generar el HTML del artículo '{title}'")
+                    self.set_status(f"Error: No se pudo generar el HTML del artículo '{title}'")
+                    uploader.disconnect()
+                    return
                 self.anim_add_line(f"  ✓ HTML generado ({len(html)} bytes)")
                 time.sleep(0.2)
                 
@@ -1143,15 +1190,24 @@ class RetroCMSApp:
                 self.anim_add_line(f"  ✓ Artículo subido")
                 time.sleep(0.15)
                 
-                # Actualizar index.html
-                self.anim_add_line("")
-                self.anim_add_line("> Actualizando índice del sitio...")
-                self.anim_set_status("Regenerando index.html...")
-                
-                # Generar y subir index.html
-                index_html = self.generator.generate_index_html(self.articles.list_articles())
-                uploader.upload_string(index_html, f"{remote_path}/index.html")
-                self.anim_add_line("  ✓ index.html actualizado")
+                # Actualizar index.html (opcional)
+                if self.config.get("site", "auto_index"):
+                    self.anim_add_line("")
+                    self.anim_add_line("> Actualizando índice del sitio...")
+                    self.anim_set_status("Regenerando index.html...")
+                    index_html = self.generator.generate_index_html(self.articles.list_articles())
+                    if not index_html:
+                        self.anim_add_line("  ✗ Error: No se pudo generar index.html")
+                        self.anim_finish(False, "No se pudo generar el archivo index.html")
+                        self.set_status("Error: No se pudo generar el archivo index.html")
+                        uploader.disconnect()
+                        return
+                    else:
+                        uploader.upload_string(index_html, f"{remote_path}/index.html")
+                        self.anim_add_line("  ✓ index.html actualizado")
+                else:
+                    self.anim_add_line("")
+                    self.anim_add_line("> Omitiendo actualización del índice (según configuración)")
 
                 
                 
@@ -1254,12 +1310,15 @@ class RetroCMSApp:
                 self.anim_update_progress(total, total)
                 self.anim_add_line("")
                 
-                # Actualizar index.html
-                self.anim_add_line("> Actualizando índice del sitio...")
-                self.anim_set_status("Regenerando index.html...")
-                index_html = self.generator.generate_index_html(self.articles.list_articles())
-                uploader.upload_string(index_html, f"{remote_path}/index.html")
-                self.anim_add_line("  ✓ index.html actualizado")
+                # Actualizar index.html (opcional)
+                if self.config.get("site", "auto_index"):
+                    self.anim_add_line("> Actualizando índice del sitio...")
+                    self.anim_set_status("Regenerando index.html...")
+                    index_html = self.generator.generate_index_html(self.articles.list_articles())
+                    uploader.upload_string(index_html, f"{remote_path}/index.html")
+                    self.anim_add_line("  ✓ index.html actualizado")
+                else:
+                    self.anim_add_line("> Omitiendo actualización del índice (según configuración)")
                 
                 
                 self.anim_add_line("")

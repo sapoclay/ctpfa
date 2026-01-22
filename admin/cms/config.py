@@ -29,7 +29,8 @@ class ConfigManager:
         },
         "site": {
             "name": "Cualquier Tiempo Pasado Fue Anterior",
-            "author": "Admin"
+            "author": "Admin",
+            "auto_index": True
         }
     }
     

@@ -16,7 +16,7 @@ class HTMLGenerator:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title} - CTPFA</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="../css/article.css">
     <script>
     function downloadMarkdown() {
         var md = document.getElementById('ctpfa-md').textContent;
@@ -183,8 +183,15 @@ class HTMLGenerator:
             full_article = self.am.get_article(art['id'])
             if full_article and full_article.get('published', False):
                 published_count += 1
-        cache_buster = datetime.now().strftime("%Y%m%d%H%M%S")
-        ARTICLE_TEMPLATE = '''<!DOCTYPE html>
+        
+        INDEX_TEMPLATE = f'''<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cualquier Tiempo Pasado Fue Anterior - CTPFA</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
         .cloud-content {{
             max-width: 800px;
             margin: 2rem auto;
@@ -351,6 +358,8 @@ class HTMLGenerator:
     </script>
 </body>
 </html>'''
+        return INDEX_TEMPLATE
+
 
     def process_content(self, content):
         """Procesa el contenido con formato básico.
