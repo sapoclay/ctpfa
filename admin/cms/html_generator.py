@@ -86,7 +86,8 @@ class HTMLGenerator:
 </section>'''
 
     def generate_article_html(self, article):
-        """Genera el HTML de un artículo"""
+        """Genera el HTML de un artículo e incrusta los datos en JSON para importación"""
+        import json
         content = self.process_content(article['content'])
         words = len(article['content'].split())
         reading_time = max(1, words // 200)
@@ -101,8 +102,24 @@ class HTMLGenerator:
             author_config = self.config.get("site", "author")
             if isinstance(author_config, str) and author_config:
                 author = author_config
+
+        # Bloque JSON seguro para importación
+        json_data = {
+            'id': article.get('id', ''),
+            'title': article.get('title', ''),
+            'subtitle': article.get('subtitle', ''),
+            'category': article.get('category', ''),
+            'content': article.get('content', ''),
+            'tags': article.get('tags', []),
+            'created': article.get('created', ''),
+            'modified': article.get('modified', ''),
+            'author': author,
+            'published': article.get('published', False)
+        }
+        json_block = f'<script type="application/json" id="ctpfa-data">{json.dumps(json_data, ensure_ascii=False)}</script>'
+
         template = Template(self.ARTICLE_TEMPLATE)
-        return template.safe_substitute(
+        html = template.safe_substitute(
             title=article['title'],
             subtitle=article.get('subtitle', ''),
             category=article['category'].upper(),
@@ -112,6 +129,12 @@ class HTMLGenerator:
             content=content,
             tags=tags_html
         )
+        # Insertar el bloque JSON antes de </body>
+        if '</body>' in html:
+            html = html.replace('</body>', f'{json_block}\n</body>')
+        else:
+            html += f'\n{json_block}'
+        return html
 
     def generate_index_html(self, articles):
         """Genera el index.html completo con los artículos publicados"""

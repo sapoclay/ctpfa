@@ -83,21 +83,28 @@ class RetroCMSApp:
         "GESTIÓN DE INCIDENTES DE SEGURIDAD"
     ]
     
+
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("⚡ Cualquier Tiempo Pasado Fue Anterior ⚡")
         self.root.geometry("1000x700")
         self.root.configure(bg=RetroTheme.BG_DARK)
-        
+
         # Inicializar componentes
         self.config = ConfigManager()
         self.articles = ArticleManager(self.config)
         self.generator = HTMLGenerator(self.articles, self.config)
-        
+
         self.setup_styles()
         self.create_menu()
-        self.create_ui()
         self.refresh_article_list()
+
+    def set_status(self, message):
+        """Actualiza la barra de estado"""
+        if hasattr(self, 'status_var'):
+            self.status_var.set(f">> {message}")
+        if hasattr(self, 'root'):
+            self.root.update_idletasks()
     
     def create_menu(self):
         """Crea el menú superior de la aplicación"""
@@ -189,75 +196,71 @@ class RetroCMSApp:
         
         # Cargar y mostrar logo
         logo_path = Path(__file__).parent.parent / "Img" / "logo.png"
-        if logo_path.exists():
-            try:
-                from PIL import Image, ImageTk, ImageDraw
-                img = Image.open(logo_path).convert("RGBA")
-                # Redimensionar si es necesario (máximo 150px de alto)
-                if img.height > 150:
-                    ratio = 150 / img.height
-                    new_size = (int(img.width * ratio), 150)
-                    img = img.resize(new_size, Image.Resampling.LANCZOS)
-                
-                # Añadir borde verde neón
-                border_size = 3
-                bordered_img = Image.new("RGBA", 
-                    (img.width + border_size * 2, img.height + border_size * 2), 
-                    (0, 255, 0, 255))  # Verde neón
-                bordered_img.paste(img, (border_size, border_size), img)
-                
-                self.logo_image = ImageTk.PhotoImage(bordered_img)
-                logo_label = tk.Label(frame, image=self.logo_image, bg=RetroTheme.BG_DARK)
-                logo_label.pack(pady=(0, 15))
-            except ImportError:
-                # Si no está PIL, mostrar texto alternativo
-                tk.Label(frame, text="⚡ CTPFA ⚡", bg=RetroTheme.BG_DARK, 
-                        fg=RetroTheme.NEON_GREEN, font=("Courier New", 18, "bold")).pack(pady=(0, 15))
-        else:
-            tk.Label(frame, text="⚡ CTPFA ⚡", bg=RetroTheme.BG_DARK,
-                    fg=RetroTheme.NEON_GREEN, font=("Courier New", 18, "bold")).pack(pady=(0, 15))
-        
-        # Título
-        tk.Label(
-            frame, text="Cualquier Tiempo Pasado\nFue Anterior",
-            bg=RetroTheme.BG_DARK, fg=RetroTheme.NEON_CYAN,
-            font=("Courier New", 14, "bold"), justify=tk.CENTER
-        ).pack(pady=(0, 10))
-        
-        # Separador
-        tk.Label(
-            frame, text="═" * 35,
-            bg=RetroTheme.BG_DARK, fg=RetroTheme.NEON_PINK,
-            font=("Courier New", 10)
-        ).pack()
-        
-        # Descripción
-        tk.Label(
-            frame, text="Cliente de gestión de contenidos\npara tu web retro",
-            bg=RetroTheme.BG_DARK, fg=RetroTheme.TEXT_SECONDARY,
-            font=("Courier New", 10), justify=tk.CENTER
-        ).pack(pady=15)
-        
-        # Versión
-        tk.Label(
-            frame, text="Versión 1.0",
-            bg=RetroTheme.BG_DARK, fg=RetroTheme.NEON_GREEN,
-            font=("Courier New", 10)
-        ).pack()
-        
-        # Copyright
-        tk.Label(
-            frame, text="© 2026",
-            bg=RetroTheme.BG_DARK, fg=RetroTheme.TEXT_SECONDARY,
-            font=("Courier New", 9)
-        ).pack(pady=(5, 15))
-        
-        # Separador
-        tk.Label(
-            frame, text="═" * 35,
-            bg=RetroTheme.BG_DARK, fg=RetroTheme.NEON_PINK,
-            font=("Courier New", 10)
-        ).pack()
+
+        def download_as_markdown(self):
+            """Descarga artículos del servidor como archivos Markdown"""
+            server = self.config.get("server")
+            if not server.get("host"):
+                RetroMessageBox.showerror(self.root, "Error", "Configura el servidor primero")
+                return
+
+            dest_dir = filedialog.askdirectory(title="Seleccionar carpeta de destino")
+            if not dest_dir:
+                return
+
+            def do_download():
+                try:
+                    import time
+                    import os
+                    protocol = server.get('protocol', 'ftp').upper()
+                    self.anim_add_line(f"> Conectando a {server['host']}...")
+                    self.anim_set_status(f"Conectando {protocol}...")
+                    uploader = FileUploader(self.config)
+                    uploader.connect()
+                    self.anim_add_line("  ✓ Conexión establecida")
+                    remote_path = server['remote_path']
+                    files = uploader.list_files(remote_path)
+                    article_files = [f for f in files if f.endswith('.html') and f not in ['index.html', 'articulo.html']]
+                    if not article_files:
+                        self.anim_add_line("  ! No hay artículos")
+                        uploader.disconnect()
+                        self.anim_finish(True, "Sin artículos")
+                        return
+                    total = len(article_files)
+                    count = 0
+                    self.anim_add_line(f"> Descargando {total} artículos...")
+                    for i, filename in enumerate(article_files):
+                        self.anim_add_line(f"  [{i+1}/{total}] {filename}")
+                        self.anim_update_progress(i, total)
+                        remote_file = f"{remote_path}/{filename}"
+                        content = uploader.download_string(remote_file)
+                        if content:
+                            data = self.articles.extract_article_data(content, filename)
+                            if data:
+                                md_body = data.get('content', '').strip()
+                                if not md_body:
+                                    md_body = '*[El contenido del artículo está vacío o no se pudo extraer.]*'
+                                md_content = f"""---\ntitle: {data.get('title','')}\ncategory: {data.get('category','')}\ntags: {', '.join(data.get('tags', []))}\ndate: {data.get('created', '')}\n---\n\n{md_body}\n"""
+                                slug = data.get('id', filename.replace('.html', ''))
+                                local_path = os.path.join(dest_dir, f"{slug}.md")
+                                with open(local_path, 'w', encoding='utf-8') as f:
+                                    f.write(md_content)
+                                self.anim_add_line(f"        → Guardado: {slug}.md")
+                                count += 1
+                            else:
+                                self.anim_add_line("        ✗ Error extrayendo datos")
+                        else:
+                            self.anim_add_line("        ✗ Fallo al descargar")
+                        time.sleep(0.1)
+                    self.anim_update_progress(total, total)
+                    uploader.disconnect()
+                    self.anim_finish(True, f"Descargados {count} archivos .md")
+                    self.set_status(f"✓ Descarga completada en {dest_dir}")
+                except Exception as e:
+                    self.anim_finish(False, str(e))
+                    self.set_status(f"Error: {str(e)}")
+
+
         
         # Frame para botones
         btn_frame = ttk.Frame(frame, style='Retro.TFrame')
@@ -283,84 +286,7 @@ class RetroCMSApp:
         ToolTip(btn_close, "Cerrar ventana")
     
     def setup_styles(self):
-        """Configura los estilos ttk"""
-        style = ttk.Style()
-        style.theme_use('clam')
-        
-        style.configure('Retro.TFrame', background=RetroTheme.BG_DARK)
-        style.configure('Retro.TLabel', 
-                       background=RetroTheme.BG_DARK,
-                       foreground=RetroTheme.NEON_CYAN,
-                       font=RetroTheme.FONT_MAIN)
-        style.configure('Title.TLabel',
-                       background=RetroTheme.BG_DARK,
-                       foreground=RetroTheme.NEON_PINK,
-                       font=RetroTheme.FONT_TITLE)
-        style.configure('Retro.TButton',
-                       background=RetroTheme.BG_PURPLE,
-                       foreground=RetroTheme.NEON_GREEN,
-                       font=RetroTheme.FONT_MAIN,
-                       borderwidth=2)
-        style.map('Retro.TButton',
-                 background=[('active', RetroTheme.NEON_GREEN)],
-                 foreground=[('active', RetroTheme.BG_DARK)])
-        style.configure('Retro.TEntry',
-                       fieldbackground=RetroTheme.BG_PURPLE,
-                       foreground=RetroTheme.TEXT_PRIMARY,
-                       font=RetroTheme.FONT_MAIN)
-        style.configure('Retro.TCombobox',
-                       fieldbackground=RetroTheme.BG_PURPLE,
-                       foreground=RetroTheme.TEXT_PRIMARY,
-                       font=RetroTheme.FONT_MAIN)
-    
-    def create_ui(self):
-        """Crea la interfaz de usuario"""
-        # Frame principal
-        main_frame = ttk.Frame(self.root, style='Retro.TFrame')
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Header
-        self.create_header(main_frame)
-        
-        # Contenido dividido
-        content_frame = ttk.Frame(main_frame, style='Retro.TFrame')
-        content_frame.pack(fill=tk.BOTH, expand=True, pady=10)
-        
-        # Panel izquierdo - Lista de artículos
-        self.create_article_list(content_frame)
-        
-        # Panel derecho - Editor
-        self.create_editor(content_frame)
-        
-        # Barra de estado
-        self.create_status_bar(main_frame)
-    
-    def create_header(self, parent):
-        """Crea el header de la aplicación"""
-        header = ttk.Frame(parent, style='Retro.TFrame')
-        header.pack(fill=tk.X, pady=(0, 10))
-        
-        title = ttk.Label(header, text="⚡ Cualquier Tiempo Pasado Fue Anterior ⚡", style='Title.TLabel')
-        title.pack(side=tk.LEFT)
-        
-        # Botones de acción
-        btn_frame = ttk.Frame(header, style='Retro.TFrame')
-        btn_frame.pack(side=tk.RIGHT)
-        
-        btn_config = ttk.Button(btn_frame, text="⚙ Config", style='Retro.TButton',
-                  command=self.show_config)
-        btn_config.pack(side=tk.LEFT, padx=2)
-        ToolTip(btn_config, "Configurar conexión y autor")
-
-        btn_import = ttk.Button(btn_frame, text="↓ Importar", style='Retro.TButton',
-                  command=self.import_from_server)
-        btn_import.pack(side=tk.LEFT, padx=2)
-        ToolTip(btn_import, "Importar artículos del servidor")
-
-        btn_upload = ttk.Button(btn_frame, text="↑ Subir Todo", style='Retro.TButton',
-                  command=self.publish_all)
-        btn_upload.pack(side=tk.LEFT, padx=2)
-        ToolTip(btn_upload, "Sincronizar todos los artículos pendientes")
+        pass
     
     def create_article_list(self, parent):
         """Crea el panel de lista de artículos"""
@@ -1416,88 +1342,58 @@ class RetroCMSApp:
             try:
                 import time
                 import os
-                
                 protocol = server.get('protocol', 'ftp').upper()
-                
-                self.anim_add_line("CTPFA DOWNLOADER v1.0")
-                self.anim_add_line("─" * 40)
-                
                 self.anim_add_line(f"> Conectando a {server['host']}...")
                 self.anim_set_status(f"Conectando {protocol}...")
-                
                 uploader = FileUploader(self.config)
                 uploader.connect()
-                
                 self.anim_add_line("  ✓ Conexión establecida")
-                
                 remote_path = server['remote_path']
                 files = uploader.list_files(remote_path)
                 article_files = [f for f in files if f.endswith('.html') and f not in ['index.html', 'articulo.html']]
-                
                 if not article_files:
                     self.anim_add_line("  ! No hay artículos")
                     uploader.disconnect()
                     self.anim_finish(True, "Sin artículos")
                     return
-
                 total = len(article_files)
                 count = 0
-                
                 self.anim_add_line(f"> Descargando {total} artículos...")
-                
                 for i, filename in enumerate(article_files):
                     self.anim_add_line(f"  [{i+1}/{total}] {filename}")
                     self.anim_update_progress(i, total)
-                    
-                    # Descargar
                     remote_file = f"{remote_path}/{filename}"
                     content = uploader.download_string(remote_file)
-                    
                     if content:
-                        # Extraer datos sin guardar
                         data = self.articles.extract_article_data(content, filename)
                         if data:
-                            # Crear contenido Markdown
-                            md_content = f"""---
-title: {data['title']}
-category: {data['category']}
-tags: {', '.join(data.get('tags', []))}
-date: {data.get('created', '')}
----
-
-{data['content']}
-"""
-                            # Guardar archivo .md
+                            md_body = data.get('content', '').strip()
+                            if not md_body:
+                                md_body = '*[El contenido del artículo está vacío o no se pudo extraer.]*'
+                            md_content = f"""---\ntitle: {data.get('title','')}\ncategory: {data.get('category','')}\ntags: {', '.join(data.get('tags', []))}\ndate: {data.get('created', '')}\n---\n\n{md_body}\n"""
                             slug = data.get('id', filename.replace('.html', ''))
                             local_path = os.path.join(dest_dir, f"{slug}.md")
-                            
                             with open(local_path, 'w', encoding='utf-8') as f:
                                 f.write(md_content)
-                                
                             self.anim_add_line(f"        → Guardado: {slug}.md")
                             count += 1
                         else:
                             self.anim_add_line("        ✗ Error extrayendo datos")
-                    
+                    else:
+                        self.anim_add_line("        ✗ Fallo al descargar")
                     time.sleep(0.1)
-                
                 self.anim_update_progress(total, total)
                 uploader.disconnect()
-                
                 self.anim_finish(True, f"Descargados {count} archivos .md")
                 self.set_status(f"✓ Descarga completada en {dest_dir}")
-                
             except Exception as e:
                 self.anim_finish(False, str(e))
+                self.set_status(f"Error: {str(e)}")
                 self.set_status(f"Error: {str(e)}")
 
         self.show_upload_animation(lambda: threading.Thread(target=do_download).start())
 
     
-    def set_status(self, message):
-        """Actualiza la barra de estado"""
-        self.status_var.set(f">> {message}")
-        self.root.update_idletasks()
     
     def cleanup(self):
         """Limpia archivos temporales al cerrar"""
