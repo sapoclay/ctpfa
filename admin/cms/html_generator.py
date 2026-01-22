@@ -1,4 +1,3 @@
-
 """
 Generación de HTML para CTPFA 
 """
@@ -12,8 +11,46 @@ class HTMLGenerator:
     """Genera HTML a partir de los artículos"""
 
     ARTICLE_TEMPLATE = '''<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title} - CTPFA</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script>
+    function downloadMarkdown() {
+        var md = document.getElementById('ctpfa-md').textContent;
+        var blob = new Blob([md], {type: 'text/markdown'});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${title}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    window.addEventListener('DOMContentLoaded', function() {
+        var btn = document.getElementById('downloadMd');
+        if (btn) btn.addEventListener('click', function(e) { e.preventDefault(); downloadMarkdown(); });
+    });
+    </script>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <main>
+        <article class="retro-article">
+            <header class="article-header">
+                <h1 class="article-title">${title}</h1>
+                <h2 class="article-subtitle">${subtitle}</h2>
+                <div class="article-meta">
+                    <span class="article-category">${category}</span>
+                    <span class="article-date">${date}</span>
+                    <span class="article-author">${author}</span>
+                    <span class="article-tags">${tags}</span>
                 </div>
-            </footer>
+            </header>
+            <section class="article-content">
+                ${content}
+            </section>
         </article>
     </main>
     <footer class="footer">
@@ -26,6 +63,7 @@ class HTMLGenerator:
             <p class="footer-text">════════════════════════════════════════════════════════</p>
         </div>
     </footer>
+    <script type="text/plain" id="ctpfa-md">${markdown}</script>
 </body>
 </html>'''
 
@@ -102,8 +140,6 @@ class HTMLGenerator:
             author_config = self.config.get("site", "author")
             if isinstance(author_config, str) and author_config:
                 author = author_config
-
-        # Bloque JSON seguro para importación
         json_data = {
             'id': article.get('id', ''),
             'title': article.get('title', ''),
@@ -117,7 +153,8 @@ class HTMLGenerator:
             'published': article.get('published', False)
         }
         json_block = f'<script type="application/json" id="ctpfa-data">{json.dumps(json_data, ensure_ascii=False)}</script>'
-
+        # Generar el contenido Markdown para descarga
+        md = f"""---\ntitle: {article.get('title','')}\nsubtitle: {article.get('subtitle','')}\ncategory: {article.get('category','')}\ntags: {', '.join(article.get('tags', []))}\ndate: {article.get('created', '')}\nauthor: {author}\n---\n\n{article.get('content','')}\n"""
         template = Template(self.ARTICLE_TEMPLATE)
         html = template.safe_substitute(
             title=article['title'],
@@ -127,7 +164,8 @@ class HTMLGenerator:
             author=author,
             reading_time=reading_time,
             content=content,
-            tags=tags_html
+            tags=tags_html,
+            markdown=md
         )
         # Insertar el bloque JSON antes de </body>
         if '</body>' in html:

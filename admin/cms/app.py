@@ -74,15 +74,74 @@ class ToolTip:
         self.tooltip_window = None
         if tw:
             tw.destroy()
+
+# Definición global para el botón retro principal
+LIME_GREEN = "#bfff00"
+def create_retro_main_button(parent, text, command):
+    btn = tk.Button(
+        parent,
+        text=f"[ {text} ]",
+        font=("Courier New", 11, "bold"),
+        fg=RetroTheme.NEON_GREEN,
+        bg=RetroTheme.BG_DARK,
+        activeforeground=RetroTheme.BG_DARK,
+        activebackground=LIME_GREEN,
+        bd=2,
+        relief=tk.RIDGE,
+        highlightthickness=2,
+        highlightbackground=RetroTheme.NEON_GREEN,
+        highlightcolor=RetroTheme.NEON_GREEN,
+        cursor="hand2",
+        command=command
+    )
+    btn.pack(side=tk.LEFT, padx=6, pady=4)
+    # Efecto hover retro
+    btn.bind("<Enter>", lambda e: btn.configure(bg=LIME_GREEN, fg=RetroTheme.BG_DARK))
+    btn.bind("<Leave>", lambda e: btn.configure(bg=RetroTheme.BG_DARK, fg=RetroTheme.NEON_GREEN))
+    return btn
+
+
 class RetroCMSApp:
     """Aplicación principal del CMS"""
-    
+
     # Categorías predefinidas
     CATEGORIES = [
         "TECNOLOGÍA", "VIDEOJUEGOS", "MÚSICA", "CINE", 
         "INTERNET", "HARDWARE", "SOFTWARE", "CULTURA", 
         "GESTIÓN DE INCIDENTES DE SEGURIDAD"
     ]
+
+    def delete_from_server(self):
+        """Elimina el artículo actual del servidor (sin eliminar localmente)"""
+        if not self.current_article_id:
+            RetroMessageBox.showwarning(self.root, "Aviso", "Selecciona un artículo para eliminar del servidor web.")
+            return
+        article = self.articles.get_article(self.current_article_id)
+        if not article or not article.get('published', False):
+            RetroMessageBox.showwarning(self.root, "Aviso", "El artículo no está publicado en el servidor web.")
+            return
+        if not RetroMessageBox.askyesno(self.root, "Confirmar eliminación", "¿Eliminar este artículo del servidor web?\nEsta acción no se puede deshacer."):
+            return
+        try:
+            self.set_status("Eliminando del servidor web...")
+            server = self.config.get("server")
+            if server.get("host"):
+                uploader = SFTPUploader(self.config)
+                uploader.connect()
+                remote_file = f"{server['remote_path']}/{self.current_article_id}.html"
+                try:
+                    if uploader.sftp is not None:
+                        uploader.sftp.remove(remote_file)
+                    self.set_status("Artículo eliminado del servidor web")
+                except IOError:
+                    self.set_status("El archivo no existía en el servidor web")
+                uploader.disconnect()
+        except Exception as e:
+            RetroMessageBox.showwarning(
+                self.root,
+                "Aviso",
+                f"No se pudo eliminar del servidor web:\n{str(e)}\n\nEl artículo sigue estando en el servidor remoto."
+            )
     
 
     def __init__(self):
@@ -90,6 +149,9 @@ class RetroCMSApp:
         self.root.title("⚡ Cualquier Tiempo Pasado Fue Anterior ⚡")
         self.root.geometry("1000x700")
         self.root.configure(bg=RetroTheme.BG_DARK)
+
+        # Inicializar barra de estado
+        self.status_var = tk.StringVar(value=">> Sistema listo")
 
         # Inicializar componentes
         self.config = ConfigManager()
@@ -123,7 +185,7 @@ class RetroCMSApp:
         menu_archivo.add_command(label="Nuevo artículo", command=self.new_article)
         menu_archivo.add_command(label="Guardar artículo", command=self.save_article)
         menu_archivo.add_separator()
-        menu_archivo.add_command(label="Importar del servidor", command=self.import_from_server)
+        # menu_archivo.add_command(label="Importar del servidor", command=self.import_from_server)  # Eliminado
         menu_archivo.add_command(label="Descargar como Markdown", command=self.download_as_markdown)
         menu_archivo.add_separator()
         menu_archivo.add_command(label="Configuración", command=self.show_config)
@@ -179,8 +241,7 @@ class RetroCMSApp:
           text_widget.config(state=tk.DISABLED)
           text_widget.pack(fill=tk.BOTH, expand=True)
 
-          btn_close = ttk.Button(frame, text="[ CERRAR ]", style='Retro.TButton',
-                        command=guide_window.destroy)
+          btn_close = tk.Button(frame, text="[ CERRAR ]", font=("Courier New", 10), fg=RetroTheme.NEON_GREEN, bg=RetroTheme.BG_DARK, bd=0, highlightthickness=1, highlightbackground=RetroTheme.NEON_GREEN, cursor="hand2", command=guide_window.destroy)
           btn_close.pack(pady=(15, 0))
           ToolTip(btn_close, "Cerrar ventana de ayuda")
     
@@ -278,14 +339,12 @@ class RetroCMSApp:
             webbrowser.open("https://github.com/sapoclay/ctpfa")
         
         # Botón GitHub
-        btn_github = ttk.Button(btn_frame, text="[ GITHUB ]", style='Retro.TButton',
-                  command=open_github)
+        btn_github = tk.Button(btn_frame, text="[ GITHUB ]", font=("Courier New", 10), fg=RetroTheme.NEON_GREEN, bg=RetroTheme.BG_DARK, bd=0, highlightthickness=1, highlightbackground=RetroTheme.NEON_GREEN, cursor="hand2", command=open_github)
         btn_github.pack(side=tk.LEFT, padx=5)
         ToolTip(btn_github, "Visitar repositorio del proyecto")
         
         # Botón cerrar
-        btn_close = ttk.Button(btn_frame, text="[ CERRAR ]", style='Retro.TButton',
-                  command=about_window.destroy)
+        btn_close = tk.Button(btn_frame, text="[ CERRAR ]", font=("Courier New", 10), fg=RetroTheme.NEON_GREEN, bg=RetroTheme.BG_DARK, bd=0, highlightthickness=1, highlightbackground=RetroTheme.NEON_GREEN, cursor="hand2", command=about_window.destroy)
         btn_close.pack(side=tk.LEFT, padx=5)
         ToolTip(btn_close, "Cerrar ventana")
     
@@ -349,16 +408,11 @@ class RetroCMSApp:
         # Botones
         btn_frame = ttk.Frame(list_frame, style='Retro.TFrame')
         btn_frame.pack(fill=tk.X, pady=5)
-        
-        btn_new = ttk.Button(btn_frame, text="+ Nuevo", style='Retro.TButton',
-                  command=self.new_article)
-        btn_new.pack(side=tk.LEFT, padx=2)
+        btn_new = create_retro_main_button(btn_frame, "+ Nuevo", self.new_article)
         ToolTip(btn_new, "Crear nuevo borrador")
-
-        btn_del = ttk.Button(btn_frame, text="✕ Eliminar", style='Retro.TButton',
-                  command=self.delete_article)
-        btn_del.pack(side=tk.LEFT, padx=2)
-        ToolTip(btn_del, "Eliminar artículo seleccionado")
+        btn_delete_local = create_retro_main_button(btn_frame, "Eliminar localmente", self.delete_article)
+        ToolTip(btn_delete_local, "Eliminar artículo seleccionado del listado y del ordenador local")
+        # ...existing code...
     
     def create_editor(self, parent):
         """Crea el panel del editor"""
@@ -436,37 +490,24 @@ class RetroCMSApp:
         # Botones del editor
         edit_btn_frame = ttk.Frame(editor_frame, style='Retro.TFrame')
         edit_btn_frame.pack(fill=tk.X, pady=5)
-        
-        btn_save = ttk.Button(edit_btn_frame, text="Guardar", style='Retro.TButton',
-                  command=self.save_article)
-        btn_save.pack(side=tk.LEFT, padx=2)
-        ToolTip(btn_save, "Guardar cambios localmente (Ctrl+S)")
 
-        btn_pub = ttk.Button(edit_btn_frame, text="Publicar", style='Retro.TButton',
-                  command=self.publish_current_article)
-        btn_pub.pack(side=tk.LEFT, padx=2)
-        ToolTip(btn_pub, "Subir este artículo al servidor")
-
-        btn_prev = ttk.Button(edit_btn_frame, text="Vista previa", style='Retro.TButton',
-                  command=self.preview_article)
-        btn_prev.pack(side=tk.LEFT, padx=2)
-        ToolTip(btn_prev, "Ver cómo quedará el artículo")
-
-        btn_clear = ttk.Button(edit_btn_frame, text="Limpiar", style='Retro.TButton',
-                  command=self.clear_editor)
-        btn_clear.pack(side=tk.LEFT, padx=2)
+        btn_save = create_retro_main_button(edit_btn_frame, "Guardar", self.save_article)
+        ToolTip(btn_save, "Guardar cambios localmente")
+        btn_pub = create_retro_main_button(edit_btn_frame, "Publicar", self.publish_current_article)
+        ToolTip(btn_pub, "Publicar artículo en el servidor web")
+        btn_prev = create_retro_main_button(edit_btn_frame, "Vista previa", self.preview_article)
+        ToolTip(btn_prev, "Ver vista previa del artículo")
+        btn_clear = create_retro_main_button(edit_btn_frame, "Limpiar", self.clear_editor)
         ToolTip(btn_clear, "Borrar campos del editor")
-        
+        btn_delete_server = create_retro_main_button(edit_btn_frame, "Eliminar del servidor", self.delete_from_server)
+        ToolTip(btn_delete_server, "Eliminar artículo del servidor web")
+        btn_update_all = create_retro_main_button(edit_btn_frame, "Actualizar todo", self.publish_all)
+        ToolTip(btn_update_all, "Actualizar todos los artículos en el servidor")
         self.current_article_id = None
     
     def create_status_bar(self, parent):
-        """Crea la barra de estado"""
-        self.status_var = tk.StringVar(value="Sistema listo...")
-        status_bar = ttk.Label(
-            parent, textvariable=self.status_var,
-            style='Retro.TLabel'
-        )
-        status_bar.pack(fill=tk.X, pady=(10, 0))
+        """Crea la barra de estado en la parte inferior de la ventana principal"""
+        pass  # La barra de estado ahora se crea en create_article_list
     
     def refresh_article_list(self):
         """Actualiza la lista de artículos"""
@@ -555,32 +596,26 @@ class RetroCMSApp:
             RetroMessageBox.showerror(self.root, "Error", f"Error al guardar: {str(e)}")
     
     def delete_article(self):
-        """Elimina el artículo seleccionado"""
+        """Elimina el artículo seleccionado localmente y opcionalmente del servidor"""
         if not self.current_article_id:
-            RetroMessageBox.showwarning(self.root, "Aviso", "Selecciona un artículo para eliminar")
+            RetroMessageBox.showwarning(self.root, "Aviso", "Selecciona un artículo para eliminar localmente.")
             return
-        
-        # Verificar si el artículo estaba publicado
         article = self.articles.get_article(self.current_article_id)
         was_published = article and article.get('published', False)
-        
-        # Preguntar si también eliminar del servidor
         delete_from_server = False
         if was_published:
             delete_from_server = RetroMessageBox.askyesno(
                 self.root,
-                "Eliminar del servidor",
-                "Este artículo está publicado en el servidor.\n"
-                "¿Deseas eliminarlo también del servidor web?"
+                "Eliminar también del servidor",
+                "El artículo está publicado en el servidor web.\n¿Quieres eliminarlo también del servidor remoto?\n\nSi eliges 'No', solo se eliminará localmente."
             )
         else:
-            if not RetroMessageBox.askyesno(self.root, "Confirmar", "¿Eliminar este artículo?"):
+            if not RetroMessageBox.askyesno(self.root, "Confirmar eliminación", "¿Eliminar este artículo localmente?\nEsta acción no se puede deshacer."):
                 return
-        
         # Eliminar del servidor si se confirmó
         if delete_from_server:
             try:
-                self.set_status("Eliminando del servidor...")
+                self.set_status("Eliminando del servidor web...")
                 server = self.config.get("server")
                 if server.get("host"):
                     uploader = SFTPUploader(self.config)
@@ -589,25 +624,22 @@ class RetroCMSApp:
                     try:
                         if uploader.sftp is not None:
                             uploader.sftp.remove(remote_file)
-                        self.set_status("Artículo eliminado del servidor")
+                        self.set_status("Artículo eliminado del servidor web")
                     except IOError:
-                        # El archivo no existía en el servidor
-                        pass
+                        self.set_status("El archivo no existía en el servidor web")
                     uploader.disconnect()
             except Exception as e:
                 RetroMessageBox.showwarning(
                     self.root,
                     "Aviso", 
-                    f"No se pudo eliminar del servidor:\n{str(e)}\n\n"
-                    "El artículo se eliminará solo localmente."
+                    f"No se pudo eliminar del servidor web:\n{str(e)}\n\nEl artículo solo se eliminará localmente."
                 )
-        
         # Eliminar localmente
         self.articles.delete_article(self.current_article_id)
         self.clear_editor()
         self.refresh_article_list()
-        self.set_status("Artículo eliminado")
-    
+        self.set_status("Artículo eliminado localmente")
+
     def clear_editor(self):
         """Limpia el editor"""
         self.current_article_id = None
@@ -623,7 +655,6 @@ class RetroCMSApp:
         if not self.title_var.get():
             RetroMessageBox.showwarning(self.root, "Aviso", "Escribe algo primero")
             return
-        
         # Crear artículo temporal
         temp_article = {
             'title': self.title_var.get(),
@@ -633,20 +664,17 @@ class RetroCMSApp:
             'tags': [t.strip() for t in self.tags_var.get().split(',') if t.strip()],
             'created': datetime.now().strftime("%Y-%m-%d %H:%M")
         }
-        
         html = self.generator.generate_article_html(temp_article)
-        
-        # Ajustar rutas CSS para que apunten al directorio padre
-        parent_dir = Path(__file__).parent.parent.parent.absolute()
-        html = html.replace('href="css/', f'href="file://{parent_dir}/css/')
-        html = html.replace("href='css/", f"href='file://{parent_dir}/css/")
-        
+        # Forzar ruta CSS a ../css/article.css
+        html = html.replace('href="css/style.css"', 'href="../css/article.css"')
+        html = html.replace("href='css/style.css'", "href='../css/article.css'")
+        html = html.replace('href="css/article.css"', 'href="../css/article.css"')
+        html = html.replace("href='css/article.css'", "href='../css/article.css'")
         # Guardar preview temporal
         preview_path = Path("preview.html")
         with open(preview_path, 'w', encoding='utf-8') as f:
             f.write(html)
-        
-        # Abrir en navegador (fix para Firefox/Snap)
+        # Abrir en navegador
         import webbrowser
         gtk_path = os.environ.pop('GTK_PATH', None)
         try:
@@ -771,8 +799,7 @@ class RetroCMSApp:
             RetroMessageBox.showsuccess(self.root, "Éxito", "Configuración guardada")
             config_window.destroy()
         
-        btn_save = ttk.Button(frame, text="Guardar", style='Retro.TButton',
-                  command=save_config)
+        btn_save = tk.Button(frame, text="Guardar", font=("Courier New", 10), fg=RetroTheme.NEON_GREEN, bg=RetroTheme.BG_DARK, bd=0, highlightthickness=1, highlightbackground=RetroTheme.NEON_GREEN, cursor="hand2", command=save_config)
         btn_save.pack(pady=20)
         ToolTip(btn_save, "Guardar cambios y cerrar")
     
@@ -936,8 +963,8 @@ class RetroCMSApp:
                     command=command
                 )
                 btn.pack(side=tk.LEFT, padx=8)
-                # Efecto hover
-                btn.bind("<Enter>", lambda e: btn.configure(fg=RetroTheme.BG_DARK, bg=color))
+                # Efecto hover verde lima
+                btn.bind("<Enter>", lambda e: btn.configure(fg=RetroTheme.BG_DARK, bg=LIME_GREEN))
                 btn.bind("<Leave>", lambda e: btn.configure(fg=color, bg=RetroTheme.BG_DARK))
                 return btn
             
