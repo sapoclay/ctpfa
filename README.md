@@ -22,51 +22,58 @@ Este proyecto consiste en dos partes:
 ## Características
 
 ### Web
-- 🚀 **Rápida**: HTML y CSS puro, sin JavaScript innecesario
+- 🚀 **Rápida**: HTML y CSS puro, "casi" sin JavaScript ni warradas que no se necesitan
 - 🎨 **Estética retro**: Colores neón, efecto scanlines, tipografía monoespaciada
 - 📱 **Responsive**: Se adapta a cualquier dispositivo
 - 🔒 **Sin dependencias**: No requiere CDN ni frameworks externos
 - ⚡ **Optimizada**: Carga instantánea
 
-### Cliente de escritorio
-- ✍️ **Editor de artículos**: Con soporte para Markdown básico
-- 📤 **Publicación SFTP**: Sube artículos directamente al servidor
-- 🎬 **Animación retro**: Visualización del proceso de subida
-- 💾 **Persistencia**: Guarda configuración y artículos localmente
-- 🗑️ **Gestión completa**: Crear, editar, eliminar (local y remoto)
+### Cliente de escritorio (CMS)
+- ✍️ **Editor avanzado**: Campos para título, subtítulo, categoría, tags y contenido (Markdown)
+- 📝 **Soporte Markdown**: Guía integrada y vista previa en navegador
+- 📤 **Publicación SFTP/SSH**: Sube artículos y actualiza el índice en el servidor
+- 📥 **Importar y descargar**: Importa artículos publicados y descarga todos como archivos Markdown
+- 🗑️ **Gestión completa**: Crear, editar, eliminar artículos (local y remoto)
+- 💾 **Persistencia local**: Guarda artículos y configuración en JSON
+- 🎬 **Animación retro**: Progreso visual y barra de estado
+- 🛠️ **Configuración fácil**: Diálogo para datos de servidor y protocolo
+- 🧩 **Tooltips y ayuda**: Ayuda contextual y guía de Markdown
 
 ## 📁 Estructura del proyecto
 
 ```
 webRetro/
 ├── index.html              # Página principal
-├── articulo.html           # Plantilla de artículo de ejemplo
-├── css/
-│   ├── style.css           # Estilos principales
-│   └── article.css         # Estilos para artículos
+├── LICENSE                 # Licencia
+├── README.md               # Este archivo
 ├── admin/                  # Cliente de escritorio (NO subir al servidor)
 │   ├── retro_cms.py        # Punto de entrada (inicia el paquete `cms`)
 │   ├── run_app.py          # Lanzador que crea el venv e instala dependencias
 │   ├── requirements.txt    # Dependencias Python
 │   ├── config.json         # Configuración del servidor (local)
 │   ├── README.md           # Documentación del cliente
-│   ├── Img/
-│   │   └── logo.png        # Logo de la aplicación
-│   ├── articles/           # Artículos guardados localmente
-│   │   └── index.json      # Índice de artículos
+│   ├── Img/                # Imágenes del cliente
+│   ├── articles/           # Artículos guardados localmente (JSON)
+│   │   ├── index.json      # Índice de artículos
+│   │   └── ...             # Artículos individuales
+│   ├── templates/          # Plantillas (vacío por defecto)
 │   └── cms/                # Código modular del cliente (paquete)
 │       ├── __init__.py
 │       ├── app.py          # Lógica principal y UI
 │       ├── articles.py     # Gestión de artículos
 │       ├── config.py       # Gestión de configuración
 │       ├── dialogs.py      # Diálogos y ventanas
-│       ├── html_generator.py
-│       ├── theme.py
+│       ├── html_generator.py # Generador de HTML y JSON
+│       ├── markdown_guide.txt # Guía de Markdown
+│       ├── theme.py        # Temas y estilos
 │       └── uploader.py     # Subida SFTP/FTP
-└── README.md               # Este archivo
+├── articles/               # Carpeta para artículos web (vacía por defecto)
+├── css/
+│   ├── style.css           # Estilos principales
+│   └── article.css         # Estilos para artículos
 ```
 
-## 🚀 Instalación
+## Instalación
 
 ### Requisitos previos
 - Python 3.8 o superior
@@ -99,47 +106,47 @@ Detalles importantes:
 - El cliente está modularizado dentro de `admin/cms/` como paquete Python. El punto de entrada sigue siendo `retro_cms.py`, que importa y arranca la clase `RetroCMSApp` desde `cms`.
 - `run_app.py` crea un entorno virtual `.venv`, instala las dependencias listadas en `requirements.txt` y ejecuta `retro_cms.py`.
 
-## 🖥️ Uso del cliente
+## Uso del cliente
 
-### Primera configuración
+### 1. Configuración inicial
 
-1. Abre el cliente: `python3 run_app.py`
-2. Ve a **Archivo → Configuración** o pulsa el botón **⚙ Config**
-3. Introduce los datos de tu servidor:
-   - **Host**: IP o dominio (ej: `midominio.com`)
-   - **Puerto**: Normalmente `22`
-   - **Usuario**: Tu usuario SSH
-   - **Contraseña**: Tu contraseña SSH
-   - **Ruta remota**: `/var/www/html/webRetro`
-4. Pulsa **💾 Guardar**
+1. Ejecuta el cliente: `python3 run_app.py`
+2. Ve a **Archivo → Configuración**
+3. Completa los datos de tu servidor (host, puerto, usuario, contraseña, ruta remota)
+4. Elige el protocolo (SFTP recomendado)
+5. Pulsa **Guardar**
 
-### Crear un artículo
+### 2. Crear y editar artículos
 
-1. Pulsa **+ Nuevo**
-2. Rellena los campos:
-   - **Título**: Nombre del artículo
-   - **Subtítulo**: Descripción breve
-   - **Categoría**: Selecciona una categoría
-   - **Tags**: Etiquetas separadas por comas
-   - **Contenido**: Escribe usando Markdown
-3. Pulsa **Guardar** para guardarlo localmente
+1. Pulsa **+ Nuevo** para empezar un borrador
+2. Completa los campos: título, subtítulo, categoría, tags y contenido (Markdown)
+3. Pulsa **Guardar** para almacenar localmente
+4. Puedes editar cualquier artículo guardado desde la lista lateral
 
-### Publicar un artículo
+### 3. Publicar y sincronizar
 
-1. Carga o crea el artículo que quieres publicar
-2. Pulsa el botón **Publicar**
-3. Confirma la publicación
-4. El artículo se subirá al servidor y el `index.html` se actualizará automáticamente
-5. Disfruta de la animación retro de transmisión 
+1. Selecciona o crea el artículo que quieres publicar
+2. Pulsa **Publicar** para subirlo al servidor
+3. El índice de la web se actualiza automáticamente
+4. Disfruta de la animación retro y barra de estado
 
-> **Nota**: "Guardar" solo guarda en local, "Publicar" sube al servidor.
+### 4. Importar y descargar artículos
 
-### Eliminar artículos
+- **Importar**: Descarga todos los artículos publicados en el servidor y los añade al cliente
+- **Descargar como Markdown**: Exporta todos los artículos publicados como archivos `.md` en la carpeta que elijas
 
-- Si el artículo está publicado, te preguntará si quieres eliminarlo también del servidor
-- Los artículos no publicados solo se eliminan localmente
+### 5. Eliminar artículos
 
-## ✍️ Formato Markdown
+- Puedes eliminar artículos locales o publicados
+- Si el artículo está en el servidor, el cliente te preguntará si deseas borrarlo también remotamente
+
+### 6. Vista previa y ayuda
+
+- Pulsa **Vista previa** para ver el artículo en tu navegador
+- Consulta la **Guía de Markdown** desde el menú Ayuda
+- Tooltips y mensajes te acompañan en cada acción
+
+## Formato Markdown
 
 El editor soporta Markdown básico:
 
@@ -162,7 +169,7 @@ Bloque de código
 ` ` `
 ```
 
-## 🎨 Personalización
+## Personalización
 
 ### Colores
 
@@ -191,7 +198,7 @@ CATEGORIES = [
 ]
 ```
 
-## 🔒 Seguridad
+## Seguridad
 
 - Las credenciales se guardan en `config.json` (solo en tu equipo local)
 - **NUNCA** subas `config.json` a repositorios públicos
