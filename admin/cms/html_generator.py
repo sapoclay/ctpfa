@@ -1,6 +1,6 @@
 
 """
-Generación de HTML para CTPFA CMS
+Generación de HTML para CTPFA 
 """
 
 import re

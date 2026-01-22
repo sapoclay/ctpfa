@@ -1,5 +1,5 @@
 """
-Aplicación principal del CMS CTPFA
+Aplicación principal de Cualquier Tiempo Pasado Fue Anterior (CTPFA)
 """
 
 import os
