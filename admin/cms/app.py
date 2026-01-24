@@ -94,7 +94,8 @@ def create_retro_main_button(parent, text, command):
         cursor="hand2",
         command=command
     )
-    btn.pack(side=tk.LEFT, padx=6, pady=4)
+    # Eliminamos el pack() interno para poder usarlo con grid() o pack() según el caso
+    # btn.pack(side=tk.LEFT, padx=6, pady=4)
     # Efecto hover retro
     btn.bind("<Enter>", lambda e: btn.configure(bg=LIME_GREEN, fg=RetroTheme.BG_DARK))
     btn.bind("<Leave>", lambda e: btn.configure(bg=RetroTheme.BG_DARK, fg=RetroTheme.NEON_GREEN))
@@ -148,6 +149,7 @@ class RetroCMSApp:
         self.root = tk.Tk()
         self.root.title("⚡ Cualquier Tiempo Pasado Fue Anterior ⚡")
         self.root.geometry("1000x700")
+        self.root.minsize(900, 650)
         self.root.configure(bg=RetroTheme.BG_DARK)
 
         # Inicializar barra de estado
@@ -160,8 +162,14 @@ class RetroCMSApp:
 
         self.setup_styles()
         self.create_menu()
-        self.create_article_list(self.root)
-        self.create_editor(self.root)
+        
+        # Contenedor principal para permitir redimensionamiento (PanedWindow)
+        self.main_paned = tk.PanedWindow(self.root, orient=tk.HORIZONTAL, bg=RetroTheme.BG_DARK,
+                                        sashwidth=4, sashpad=0, bd=0)
+        self.main_paned.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        self.create_article_list(self.main_paned)
+        self.create_editor(self.main_paned)
         self.create_status_bar(self.root)
         self.refresh_article_list()
 
@@ -207,6 +215,8 @@ class RetroCMSApp:
                                 activeforeground=RetroTheme.BG_DARK, font=RetroTheme.FONT_MAIN)
         menu_servidor.add_command(label="Publicar artículo", command=self.publish_current_article)
         menu_servidor.add_command(label="Actualizar todo", command=self.publish_all)
+        menu_servidor.add_separator()
+        menu_servidor.add_command(label="Sincronizar Estilos", command=self.sync_styles_to_server)
         menu_servidor.add_separator()
         menu_servidor.add_command(label="Importar artículos del servidor", command=self.download_articles_from_server)
         menu_servidor.add_command(label="Eliminar del servidor", command=self.delete_from_server)
@@ -280,7 +290,7 @@ class RetroCMSApp:
                     self.anim_add_line(f"  [{i+1}/{total}] {filename}")
                     self.anim_set_status(f"Descargando: {filename}...")
                     self.anim_update_progress(i, total)
-                    remote_file = f"{remote_path}/{filename}"
+                    remote_file = f"{remote_path.rstrip('/')}/{filename}"
                     content = uploader.download_string(remote_file)
                     if content:
                         # Solo importar si NO existe localmente
@@ -307,7 +317,7 @@ class RetroCMSApp:
                 self.anim_finish(False, str(e))
                 self.set_status(f"Error: {str(e)}")
 
-                self.show_upload_animation(lambda: threading.Thread(target=do_download).start())
+        self.show_upload_animation(lambda: threading.Thread(target=do_download).start())
     
     def show_about(self):
         """Muestra información sobre la aplicación"""
@@ -464,7 +474,6 @@ class RetroCMSApp:
     def create_article_list(self, parent):
         """Crea el panel de lista de artículos"""
         list_frame = ttk.Frame(parent, style='Retro.TFrame')
-        list_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
         
         ttk.Label(list_frame, text="═══ ARTÍCULOS ═══", 
                  style='Retro.TLabel').pack()
@@ -482,22 +491,25 @@ class RetroCMSApp:
             borderwidth=2,
             relief=tk.GROOVE
         )
-        self.article_listbox.pack(fill=tk.Y, expand=True, pady=5)
+        self.article_listbox.pack(fill=tk.BOTH, expand=True, pady=5)
+        # Añadir al PanedWindow
+        parent.add(list_frame, width=280)
         self.article_listbox.bind('<<ListboxSelect>>', self.on_article_select)
         
         # Botones
         btn_frame = ttk.Frame(list_frame, style='Retro.TFrame')
         btn_frame.pack(fill=tk.X, pady=5)
         btn_new = create_retro_main_button(btn_frame, "+ Nuevo", self.new_article)
+        btn_new.pack(side=tk.LEFT, padx=6, pady=4)
         ToolTip(btn_new, "Crear nuevo borrador")
-        btn_delete_local = create_retro_main_button(btn_frame, "Eliminar localmente", self.delete_article)
+        btn_delete_local = create_retro_main_button(btn_frame, "Eliminar", self.delete_article)
+        btn_delete_local.pack(side=tk.LEFT, padx=6, pady=4)
         ToolTip(btn_delete_local, "Eliminar artículo seleccionado del listado y del ordenador local")
-        # ...existing code...
     
     def create_editor(self, parent):
         """Crea el panel del editor"""
         editor_frame = ttk.Frame(parent, style='Retro.TFrame')
-        editor_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        parent.add(editor_frame)
         
         ttk.Label(editor_frame, text="═══ EDITOR ═══", 
                  style='Retro.TLabel').pack()
@@ -515,7 +527,14 @@ class RetroCMSApp:
             width=60, bg=RetroTheme.BG_PURPLE, fg=RetroTheme.TEXT_PRIMARY,
             insertbackground=RetroTheme.NEON_GREEN, font=RetroTheme.FONT_MAIN
         )
-        self.title_entry.grid(row=0, column=1, pady=2, padx=5)
+        self.title_entry.grid(row=0, column=1, pady=2, padx=5, sticky=tk.EW)
+        
+        # Actualizar todo (al lado de Título)
+        btn_update_all_top = create_retro_main_button(form_frame, "Actualizar todo", self.publish_all)
+        btn_update_all_top.grid(row=0, column=2, padx=5, pady=2, sticky=tk.W)
+        ToolTip(btn_update_all_top, "Actualizar todos los artículos en el servidor")
+        
+        form_frame.columnconfigure(1, weight=1)
         
         # Subtítulo
         ttk.Label(form_frame, text="SUBTÍTULO:", style='Retro.TLabel').grid(
@@ -526,7 +545,12 @@ class RetroCMSApp:
             width=60, bg=RetroTheme.BG_PURPLE, fg=RetroTheme.TEXT_PRIMARY,
             insertbackground=RetroTheme.NEON_GREEN, font=RetroTheme.FONT_MAIN
         )
-        self.subtitle_entry.grid(row=1, column=1, pady=2, padx=5)
+        self.subtitle_entry.grid(row=1, column=1, pady=2, padx=5, sticky=tk.EW)
+        
+        # Importar todo (al lado de Subtítulo)
+        btn_import_top = create_retro_main_button(form_frame, "Importar todo", self.download_articles_from_server)
+        btn_import_top.grid(row=1, column=2, padx=5, pady=2, sticky=tk.W)
+        ToolTip(btn_import_top, "Descargar artículos nuevos del servidor web")
         
         # Categoría
         ttk.Label(form_frame, text="CATEGORÍA:", style='Retro.TLabel').grid(
@@ -547,7 +571,7 @@ class RetroCMSApp:
             width=60, bg=RetroTheme.BG_PURPLE, fg=RetroTheme.TEXT_PRIMARY,
             insertbackground=RetroTheme.NEON_GREEN, font=RetroTheme.FONT_MAIN
         )
-        self.tags_entry.grid(row=3, column=1, pady=2, padx=5)
+        self.tags_entry.grid(row=3, column=1, pady=2, padx=5, sticky=tk.EW)
         ttk.Label(form_frame, text="(separados por comas)", 
                  style='Retro.TLabel').grid(row=3, column=2, sticky=tk.W)
         
@@ -572,24 +596,33 @@ class RetroCMSApp:
         edit_btn_frame.pack(fill=tk.X, pady=5)
 
         btn_save = create_retro_main_button(edit_btn_frame, "Guardar", self.save_article)
+        btn_save.pack(side=tk.LEFT, padx=6, pady=4)
         ToolTip(btn_save, "Guardar cambios localmente")
         btn_pub = create_retro_main_button(edit_btn_frame, "Publicar", self.publish_current_article)
+        btn_pub.pack(side=tk.LEFT, padx=6, pady=4)
         ToolTip(btn_pub, "Publicar artículo en el servidor web")
         btn_prev = create_retro_main_button(edit_btn_frame, "Vista previa", self.preview_article)
+        btn_prev.pack(side=tk.LEFT, padx=6, pady=4)
         ToolTip(btn_prev, "Ver vista previa del artículo")
         btn_clear = create_retro_main_button(edit_btn_frame, "Limpiar", self.clear_editor)
+        btn_clear.pack(side=tk.LEFT, padx=6, pady=4)
         ToolTip(btn_clear, "Borrar campos del editor")
-        btn_delete_server = create_retro_main_button(edit_btn_frame, "Eliminar del servidor", self.delete_from_server)
+        btn_delete_server = create_retro_main_button(edit_btn_frame, "Eliminar", self.delete_from_server)
+        btn_delete_server.pack(side=tk.LEFT, padx=6, pady=4)
         ToolTip(btn_delete_server, "Eliminar artículo del servidor web")
-        btn_update_all = create_retro_main_button(edit_btn_frame, "Actualizar todo", self.publish_all)
-        ToolTip(btn_update_all, "Actualizar todos los artículos en el servidor")
-        btn_import = create_retro_main_button(edit_btn_frame, "Importar todo", self.download_articles_from_server)
-        ToolTip(btn_import, "Descargar artículos nuevos del servidor web")
         self.current_article_id = None
     
     def create_status_bar(self, parent):
         """Crea la barra de estado en la parte inferior de la ventana principal"""
-        pass  # La barra de estado ahora se crea en create_article_list
+        status_frame = tk.Frame(parent, bg=RetroTheme.BG_DARK, height=25,
+                               highlightbackground=RetroTheme.NEON_CYAN,
+                               highlightthickness=1)
+        status_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=(0, 10))
+        
+        status_label = tk.Label(status_frame, textvariable=self.status_var, 
+                               bg=RetroTheme.BG_DARK, fg=RetroTheme.NEON_GREEN,
+                               font=("Courier New", 9), anchor=tk.W)
+        status_label.pack(side=tk.LEFT, padx=10, pady=2)
     
     def refresh_article_list(self):
         """Actualiza la lista de artículos"""
@@ -747,11 +780,9 @@ class RetroCMSApp:
             'created': datetime.now().strftime("%Y-%m-%d %H:%M")
         }
         html = self.generator.generate_article_html(temp_article)
-        # Forzar ruta CSS a ../css/article.css
-        html = html.replace('href="css/style.css"', 'href="../css/article.css"')
-        html = html.replace("href='css/style.css'", "href='../css/article.css'")
-        html = html.replace('href="css/article.css"', 'href="../css/article.css"')
-        html = html.replace("href='css/article.css'", "href='../css/article.css'")
+        # Ajustar rutas CSS para vista local (desde la carpeta admin/)
+        html = html.replace('href="css/', 'href="../css/')
+        html = html.replace("href='css/", "href='../css/")
         # Guardar preview temporal
         preview_path = Path("preview.html")
         with open(preview_path, 'w', encoding='utf-8') as f:
@@ -1354,7 +1385,7 @@ class RetroCMSApp:
                     html = self.generator.generate_article_html(full_article)
                     
                     # Subir
-                    remote_file = f"{remote_path}/{filename}"
+                    remote_file = f"{remote_path.rstrip('/')}/{filename}"
                     uploader.upload_string(html, remote_file)
                     
                     self.anim_add_line(f"        → Transferido ({len(html)} bytes)")
@@ -1393,112 +1424,57 @@ class RetroCMSApp:
         self.show_upload_animation(lambda: threading.Thread(target=do_upload).start())
 
 
-    def import_from_server(self):
-        """Importa artículos desde el servidor"""
+
+
+    def sync_styles_to_server(self):
+        """Sube los archivos CSS al servidor"""
         server = self.config.get("server")
         if not server.get("host"):
             RetroMessageBox.showerror(self.root, "Error", "Configura el servidor primero")
             return
-            
-        if not RetroMessageBox.askyesno(self.root, "Importar del servidor", 
-                "Se buscarán artículos en el servidor y se importarán a local.\n"
-                "Los artículos existentes se actualizarán.\n\n"
-                "¿Continuar?"):
+
+        if not RetroMessageBox.askyesno(self.root, "Sincronizar Estilos", 
+                                   "¿Subir los archivos de estilo (CSS) al servidor?\nEsto es necesario si los artículos no se ven correctamente."):
             return
 
-        def do_import():
+        def do_sync():
             try:
                 import time
-                
                 protocol = server.get('protocol', 'ftp').upper()
                 
-                self.anim_add_line("CTPFA IMPORT SYSTEM v1.0")
+                self.anim_add_line("CTPFA ASSET SYNC SYSTEM v1.0")
                 self.anim_add_line("─" * 40)
                 time.sleep(0.3)
                 
-                self.anim_add_line(f"> Conectando a {server['host']} ({protocol})...")
-                self.anim_set_status(f"Estableciendo conexión {protocol}...")
+                self.anim_add_line(f"> Conectando a {server['host']}...")
+                self.anim_set_status(f"Conectando {protocol}...")
                 
                 uploader = FileUploader(self.config)
                 uploader.connect()
-                
                 self.anim_add_line("  ✓ Conexión establecida")
-                time.sleep(0.2)
                 
-                self.anim_add_line("")
-                self.anim_add_line("> Listando archivos remotos...")
-                remote_path = server['remote_path']
+                # Ruta local de CSS (asumiendo que está en ../css desde admin/cms/)
+                # Pero en el sistema de archivos está en /var/www/html/webRetro/css
+                # El script corre desde /var/www/html/webRetro/admin
+                css_local_path = Path(__file__).parent.parent.parent / "css"
                 
-                # Listar archivos
-                files = uploader.list_files(remote_path)
+                self.anim_add_line(f"> Sincronizando carpeta: css/")
+                self.anim_set_status("Subiendo CSS...")
                 
-                # Filtrar solo .html ignorando index.html y articulo.html (plantilla)
-                article_files = [
-                    f for f in files 
-                    if f.endswith('.html') and f not in ['index.html', 'articulo.html']
-                ]
+                count = uploader.upload_asset_folder(css_local_path, server['remote_path'])
                 
-                self.anim_add_line(f"  ✓ Encontrados {len(article_files)} artículos")
+                self.anim_add_line(f"  ✓ {count} archivos de estilo subidos")
+                self.anim_update_progress(1, 1)
                 
-                if not article_files:
-                    self.anim_add_line("  ! No hay artículos para importar")
-                    time.sleep(1)
-                    uploader.disconnect()
-                    self.anim_finish(True, "No se encontraron artículos nuevos")
-                    return
-
-                total = len(article_files)
-                imported_count = 0
-                
-                self.anim_add_line("")
-                self.anim_add_line("> Iniciando descarga e importación...")
-                self.anim_add_line("")
-                
-                for i, filename in enumerate(article_files):
-                    self.anim_add_line(f"  [{i+1}/{total}] {filename}")
-                    self.anim_set_status(f"Importando: {filename}...")
-                    self.anim_update_progress(i, total)
-                    
-                    # Descargar contenido
-                    remote_file = f"{remote_path}/{filename}"
-                    content = uploader.download_string(remote_file)
-                    
-                    if content:
-                        # Importar (overwrite=False para respetar locales)
-                        article = self.articles.import_article_from_html(content, filename, overwrite=False)
-                        if article:
-                            self.anim_add_line(f"        → Importado: {article['title'][:30]}")
-                            imported_count += 1
-                        else:
-                            # Puede devolver None si falló O si ya existía (y overwrite=False)
-                            # Verificamos si existe para dar mensaje adecuado
-                            article_id = filename.replace('.html', '')
-                            if self.articles.get_article(article_id):
-                                self.anim_add_line(f"        → Omitido (Ya existe localmente)")
-                            else:
-                                self.anim_add_line("        ✗ Fallo al importar")
-                    else:
-                        self.anim_add_line("        ✗ Fallo al descargar")
-                        
-                    time.sleep(0.1)
-                
-                self.anim_update_progress(total, total)
-                self.anim_add_line("")
-                self.anim_add_line("> Cerrando conexión...")
                 uploader.disconnect()
-                
-                self.anim_finish(True, f"Se importaron {imported_count} artículo(s)")
-                self.set_status(f"✓ Importados {imported_count} artículos")
-                
-                # Actualizar lista en el hilo principal
-                self.root.after(0, self.refresh_article_list)
-                
+                self.anim_finish(True, f"Se han sincronizado {count} archivos de estilo")
+                self.set_status(f"✓ Estilos sincronizados ({count} archivos)")
             except Exception as e:
                 self.anim_finish(False, str(e))
                 self.set_status(f"Error: {str(e)}")
 
-        # Mostrar ventana de animación y ejecutar
-        self.show_upload_animation(lambda: threading.Thread(target=do_import).start())
+        self.show_upload_animation(lambda: threading.Thread(target=do_sync).start())
+
 
     def download_as_markdown(self):
         """Descarga artículos del servidor como archivos Markdown"""
@@ -1536,7 +1512,7 @@ class RetroCMSApp:
                 for i, filename in enumerate(article_files):
                     self.anim_add_line(f"  [{i+1}/{total}] {filename}")
                     self.anim_update_progress(i, total)
-                    remote_file = f"{remote_path}/{filename}"
+                    remote_file = f"{remote_path.rstrip('/')}/{filename}"
                     content = uploader.download_string(remote_file)
                     if content:
                         data = self.articles.extract_article_data(content, filename)
@@ -1562,7 +1538,6 @@ class RetroCMSApp:
                 self.set_status(f"✓ Descarga completada en {dest_dir}")
             except Exception as e:
                 self.anim_finish(False, str(e))
-                self.set_status(f"Error: {str(e)}")
                 self.set_status(f"Error: {str(e)}")
 
         self.show_upload_animation(lambda: threading.Thread(target=do_download).start())

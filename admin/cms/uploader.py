@@ -248,5 +248,35 @@ class FileUploader:
             except:
                 return None
 
+    def upload_asset_folder(self, local_folder, remote_base_path):
+        """Sube una carpeta completa de activos (como 'css' o 'js')"""
+        import os
+        from pathlib import Path
+        
+        local_path = Path(local_folder)
+        if not local_path.exists():
+            return 0
+            
+        folder_name = local_path.name
+        remote_folder = f"{remote_base_path.rstrip('/')}/{folder_name}"
+        
+        count = 0
+        for item in local_path.glob('*'):
+            if item.is_file():
+                remote_file = f"{remote_folder}/{item.name}"
+                if self.protocol == "sftp":
+                    # En SFTP asegurar dir puede ser complejo si no existe, 
+                    # pero asumimos que el parent existe o lo creamos
+                    try:
+                        self.sftp.mkdir(remote_folder)
+                    except:
+                        pass
+                else:
+                    self._ftp_ensure_dir(remote_folder)
+                
+                self.upload_file(item, remote_file)
+                count += 1
+        return count
+
 # Alias para compatibilidad
 SFTPUploader = FileUploader

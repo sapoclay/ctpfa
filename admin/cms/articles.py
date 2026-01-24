@@ -151,7 +151,7 @@ class ArticleManager:
 
         # Estrategia 2: Parsing Best Effort (Legacy)
         try:
-            title_match = re.search(r'<title>(.*?) \| .*?</title>', html_content)
+            title_match = re.search(r'<title>(.*?) (?:\||-) .*?</title>', html_content)
             title = title_match.group(1).strip() if title_match else "Sin título"
             
             subtitle_match = re.search(r'<meta name="description" content="(.*?) - .*?">', html_content)
@@ -160,8 +160,17 @@ class ArticleManager:
             category_match = re.search(r'<span class="article-category">(.*?)</span>', html_content)
             category = category_match.group(1).strip() if category_match else "GENERAL"
             
-            content_match = re.search(r'<div class="article-content">(.*?)</div>\s*<footer', html_content, re.DOTALL)
+            # Intentar encontrar contenido con section o div
+            content_match = re.search(r'<(?:section|div) class="article-content">(.*?)</(?:section|div)>', html_content, re.DOTALL)
             html_body = content_match.group(1).strip() if content_match else ""
+            
+            if not html_body:
+                # Intento alternativo si el anterior falló (por ejemplo, si hay etiquetas anidadas)
+                content_match = re.search(r'class="article-content">(.*?)</article>', html_content, re.DOTALL)
+                if content_match:
+                    html_body = content_match.group(1).strip()
+                    # Quitar el posible cierre de section/div sobrante
+                    html_body = re.sub(r'</(?:section|div)>\s*$', '', html_body)
             
             content = self._html_to_markdown_basic(html_body)
             

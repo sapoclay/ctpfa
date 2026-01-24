@@ -3,6 +3,7 @@ Generación de HTML para CTPFA
 """
 
 import re
+import html
 from datetime import datetime
 from string import Template
 
@@ -16,10 +17,12 @@ class HTMLGenerator:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title} - CTPFA</title>
-    <link rel="stylesheet" href="../css/article.css">
+    <link rel="stylesheet" href="css/style.css?v=${v}">
+    <link rel="stylesheet" href="css/article.css?v=${v}">
     <script>
     function downloadMarkdown() {
-        var md = document.getElementById('ctpfa-md').textContent;
+        var el = document.getElementById('ctpfa-md');
+        var md = el.value || el.textContent;
         var blob = new Blob([md], {type: 'text/markdown'});
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -37,7 +40,7 @@ class HTMLGenerator:
 <body>
     <div class="scanlines"></div>
     <main>
-        <article class="retro-article">
+        <article class="article">
             <header class="article-header">
                 <h1 class="article-title">${title}</h1>
                 <h2 class="article-subtitle">${subtitle}</h2>
@@ -63,7 +66,7 @@ class HTMLGenerator:
             <p class="footer-text">════════════════════════════════════════════════════════</p>
         </div>
     </footer>
-    <script type="text/plain" id="ctpfa-md">${markdown}</script>
+    <textarea id="ctpfa-md" style="display:none;">${markdown}</textarea>
 </body>
 </html>'''
 
@@ -156,7 +159,7 @@ class HTMLGenerator:
         # Generar el contenido Markdown para descarga
         md = f"""---\ntitle: {article.get('title','')}\nsubtitle: {article.get('subtitle','')}\ncategory: {article.get('category','')}\ntags: {', '.join(article.get('tags', []))}\ndate: {article.get('created', '')}\nauthor: {author}\n---\n\n{article.get('content','')}\n"""
         template = Template(self.ARTICLE_TEMPLATE)
-        html = template.safe_substitute(
+        final_html = template.safe_substitute(
             title=article['title'],
             subtitle=article.get('subtitle', ''),
             category=article['category'].upper(),
@@ -165,14 +168,15 @@ class HTMLGenerator:
             reading_time=reading_time,
             content=content,
             tags=tags_html,
-            markdown=md
+            markdown=html.escape(md),
+            v=datetime.now().strftime("%Y%m%d%H%M")
         )
         # Insertar el bloque JSON antes de </body>
-        if '</body>' in html:
-            html = html.replace('</body>', f'{json_block}\n</body>')
+        if '</body>' in final_html:
+            final_html = final_html.replace('</body>', f'{json_block}\n</body>')
         else:
-            html += f'\n{json_block}'
-        return html
+            final_html += f'\n{json_block}'
+        return final_html
 
     def generate_index_html(self, articles):
         """Genera el index.html completo con los artículos publicados"""
