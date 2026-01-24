@@ -245,15 +245,11 @@ Si al abrir enlaces aparece un error de `GTK_PATH`, el cliente ya incluye un fix
 - Comprueba que las credenciales sean correctas
 - Asegúrate de que la ruta remota existe
 
-### No aparece el logo
-- Verifica que existe `admin/Img/logo.png`
-- El archivo debe ser PNG con transparencia para mejor resultado
-
 ## Licencia
 
 2026 Cualquier Tiempo Pasado Fue Anterior
 
-## 🔗 Enlaces
+## Enlaces
 
 - **Repositorio**: [https://github.com/sapoclay/ctpfa](https://github.com/sapoclay/ctpfa)
 
