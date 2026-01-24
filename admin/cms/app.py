@@ -613,7 +613,7 @@ class RetroCMSApp:
         self.current_article_id = None
     
     def create_status_bar(self, parent):
-        """Crea la barra de estado en la parte inferior de la ventana principal"""
+        """Crea la barra de estado en la parte inferior de la ventana"""
         status_frame = tk.Frame(parent, bg=RetroTheme.BG_DARK, height=25,
                                highlightbackground=RetroTheme.NEON_CYAN,
                                highlightthickness=1)

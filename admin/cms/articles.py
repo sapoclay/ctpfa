@@ -247,7 +247,7 @@ class ArticleManager:
             self.save_index()
             return article
     def _html_to_markdown_basic(self, html):
-        """Convierte HTML básico a Markdown (Best Effort)"""
+        """Convierte HTML básico a Markdown"""
         # Saltos de línea
         text = html.replace('<br>', '\n').replace('<br/>', '\n')
         text = text.replace('</p>', '\n\n').replace('<p>', '')

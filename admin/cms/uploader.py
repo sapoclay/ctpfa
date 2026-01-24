@@ -87,6 +87,7 @@ class FileUploader:
         # Establecer modo binario
         self.ftp.voidcmd('TYPE I')
     
+    """SIN PROBAR AÚN"""
     def _connect_sftp(self):
         """Establece conexión SFTP"""
         server = self.config.get("server")
